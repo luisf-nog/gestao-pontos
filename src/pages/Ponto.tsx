@@ -141,7 +141,9 @@ export default function Ponto() {
     }
 
     const workedHours = calculateWorkedHours(formData.entry_time, formData.exit_time);
-    const recordDate = new Date(formData.date + 'T00:00:00');
+    // Parse date correctly for any date (including retroactive)
+    const [year, month, day] = formData.date.split('-').map(Number);
+    const recordDate = new Date(year, month - 1, day);
     const { dailyValue, overtimeValue, totalValue } = calculateDailyAndOvertimeValues(
       workedHours,
       recordDate,

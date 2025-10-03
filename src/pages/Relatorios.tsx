@@ -42,7 +42,7 @@ export default function Relatorios() {
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const { toast } = useToast();
 
-  const setQuickFilter = (filter: 'week' | 'lastWeek' | 'fortnight' | 'month') => {
+  const setQuickFilter = (filter: 'week' | 'lastWeek' | 'fortnight' | 'lastFortnight' | 'month') => {
     const now = new Date();
     switch (filter) {
       case 'week':
@@ -62,6 +62,19 @@ export default function Relatorios() {
         } else {
           setStartDate(format(new Date(now.getFullYear(), now.getMonth(), 16), 'yyyy-MM-dd'));
           setEndDate(format(endOfMonth(now), 'yyyy-MM-dd'));
+        }
+        break;
+      case 'lastFortnight':
+        const currentDay = now.getDate();
+        if (currentDay <= 15) {
+          // Se estamos na primeira quinzena, a quinzena passada é a segunda do mês anterior
+          const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          setStartDate(format(new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 16), 'yyyy-MM-dd'));
+          setEndDate(format(endOfMonth(lastMonth), 'yyyy-MM-dd'));
+        } else {
+          // Se estamos na segunda quinzena, a quinzena passada é a primeira do mês atual
+          setStartDate(format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd'));
+          setEndDate(format(new Date(now.getFullYear(), now.getMonth(), 15), 'yyyy-MM-dd'));
         }
         break;
       case 'month':
@@ -259,6 +272,9 @@ export default function Relatorios() {
             </Button>
             <Button variant="outline" size="sm" onClick={() => setQuickFilter('fortnight')}>
               Esta Quinzena
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setQuickFilter('lastFortnight')}>
+              Quinzena Passada
             </Button>
             <Button variant="outline" size="sm" onClick={() => setQuickFilter('month')}>
               Este Mês
