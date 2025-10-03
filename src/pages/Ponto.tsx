@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Search, Pencil, Trash2, Download } from 'lucide-react';
 import { calculateWorkedHours, calculateDailyAndOvertimeValues } from '@/utils/timeCalculations';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface Employee {
@@ -48,7 +48,8 @@ export default function Ponto() {
   const [filteredRecords, setFilteredRecords] = useState<TimeRecord[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterDate, setFilterDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<TimeRecord | null>(null);
   const { toast } = useToast();
@@ -67,7 +68,47 @@ export default function Ponto() {
 
   useEffect(() => {
     filterRecords();
-  }, [timeRecords, searchTerm, selectedEmployee, filterDate]);
+  }, [timeRecords, searchTerm, selectedEmployee, startDate, endDate]);
+
+  const setQuickFilter = (filter: 'week' | 'lastWeek' | 'fortnight' | 'lastFortnight' | 'month') => {
+    const now = new Date();
+    switch (filter) {
+      case 'week':
+        setStartDate(format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+        setEndDate(format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+        break;
+      case 'lastWeek':
+        const lastWeek = subWeeks(now, 1);
+        setStartDate(format(startOfWeek(lastWeek, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+        setEndDate(format(endOfWeek(lastWeek, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+        break;
+      case 'fortnight':
+        const dayOfMonth = now.getDate();
+        if (dayOfMonth <= 15) {
+          setStartDate(format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd'));
+          setEndDate(format(new Date(now.getFullYear(), now.getMonth(), 15), 'yyyy-MM-dd'));
+        } else {
+          setStartDate(format(new Date(now.getFullYear(), now.getMonth(), 16), 'yyyy-MM-dd'));
+          setEndDate(format(endOfMonth(now), 'yyyy-MM-dd'));
+        }
+        break;
+      case 'lastFortnight':
+        const currentDay = now.getDate();
+        if (currentDay <= 15) {
+          const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          setStartDate(format(new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 16), 'yyyy-MM-dd'));
+          setEndDate(format(endOfMonth(lastMonth), 'yyyy-MM-dd'));
+        } else {
+          setStartDate(format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd'));
+          setEndDate(format(new Date(now.getFullYear(), now.getMonth(), 15), 'yyyy-MM-dd'));
+        }
+        break;
+      case 'month':
+        setStartDate(format(startOfMonth(now), 'yyyy-MM-dd'));
+        setEndDate(format(endOfMonth(now), 'yyyy-MM-dd'));
+        break;
+    }
+  };
 
   const fetchEmployees = async () => {
     const { data, error } = await supabase
@@ -141,8 +182,12 @@ export default function Ponto() {
       filtered = filtered.filter(record => record.employee_id === selectedEmployee);
     }
 
-    if (filterDate) {
-      filtered = filtered.filter(record => record.date === filterDate);
+    if (startDate && endDate) {
+      filtered = filtered.filter(record => record.date >= startDate && record.date <= endDate);
+    } else if (startDate) {
+      filtered = filtered.filter(record => record.date >= startDate);
+    } else if (endDate) {
+      filtered = filtered.filter(record => record.date <= endDate);
     }
 
     setFilteredRecords(filtered);
@@ -414,10 +459,31 @@ export default function Ponto() {
       <Card>
         <CardHeader>
           <CardTitle>Filtros de Busca</CardTitle>
-          <CardDescription>Filtre os registros por funcionário ou data</CardDescription>
+          <CardDescription>Filtre os registros por funcionário ou período</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => setQuickFilter('week')}>
+              Esta Semana
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setQuickFilter('lastWeek')}>
+              Semana Passada
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setQuickFilter('fortnight')}>
+              Esta Quinzena
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setQuickFilter('lastFortnight')}>
+              Quinzena Passada
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setQuickFilter('month')}>
+              Este Mês
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => { setStartDate(''); setEndDate(''); }}>
+              Limpar Filtros
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label>Buscar por nome</Label>
               <div className="relative">
@@ -446,11 +512,19 @@ export default function Ponto() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Data</Label>
+              <Label>Data Inicial</Label>
               <Input
                 type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Data Final</Label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
           </div>
