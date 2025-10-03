@@ -7,8 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Download, Calendar } from 'lucide-react';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { Download, Calendar, DollarSign, Clock, FileText, TrendingUp } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subWeeks, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface Company {
@@ -36,10 +36,40 @@ export default function Relatorios() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [reportData, setReportData] = useState<ReportRecord[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
   const [selectedCompany, setSelectedCompany] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const { toast } = useToast();
+
+  const setQuickFilter = (filter: 'week' | 'lastWeek' | 'fortnight' | 'month') => {
+    const now = new Date();
+    switch (filter) {
+      case 'week':
+        setStartDate(format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+        setEndDate(format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+        break;
+      case 'lastWeek':
+        const lastWeek = subWeeks(now, 1);
+        setStartDate(format(startOfWeek(lastWeek, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+        setEndDate(format(endOfWeek(lastWeek, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+        break;
+      case 'fortnight':
+        const dayOfMonth = now.getDate();
+        if (dayOfMonth <= 15) {
+          setStartDate(format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd'));
+          setEndDate(format(new Date(now.getFullYear(), now.getMonth(), 15), 'yyyy-MM-dd'));
+        } else {
+          setStartDate(format(new Date(now.getFullYear(), now.getMonth(), 16), 'yyyy-MM-dd'));
+          setEndDate(format(endOfMonth(now), 'yyyy-MM-dd'));
+        }
+        break;
+      case 'month':
+        setStartDate(format(startOfMonth(now), 'yyyy-MM-dd'));
+        setEndDate(format(endOfMonth(now), 'yyyy-MM-dd'));
+        break;
+    }
+  };
 
   useEffect(() => {
     fetchCompanies();
@@ -48,7 +78,7 @@ export default function Relatorios() {
 
   useEffect(() => {
     generateReport();
-  }, [selectedMonth, selectedCompany, selectedEmployee]);
+  }, [startDate, endDate, selectedCompany, selectedEmployee]);
 
   const fetchCompanies = async () => {
     const { data } = await supabase
@@ -69,10 +99,6 @@ export default function Relatorios() {
   };
 
   const generateReport = async () => {
-    const monthDate = new Date(selectedMonth + '-01');
-    const startDate = format(startOfMonth(monthDate), 'yyyy-MM-dd');
-    const endDate = format(endOfMonth(monthDate), 'yyyy-MM-dd');
-
     let query = supabase
       .from('time_records')
       .select(`
@@ -175,7 +201,7 @@ export default function Relatorios() {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `relatorio-${selectedMonth}.csv`);
+    link.setAttribute('download', `relatorio-${startDate}-${endDate}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -217,27 +243,50 @@ export default function Relatorios() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Filtros
+            Filtros de Período
           </CardTitle>
           <CardDescription>
             Selecione o período e os filtros para gerar o relatório
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => setQuickFilter('week')}>
+              Esta Semana
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setQuickFilter('lastWeek')}>
+              Semana Passada
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setQuickFilter('fortnight')}>
+              Esta Quinzena
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setQuickFilter('month')}>
+              Este Mês
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label>Mês</Label>
+              <Label>Data Inicial</Label>
               <Input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Data Final</Label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label>Empresa</Label>
               <Select value={selectedCompany || undefined} onValueChange={(value) => setSelectedCompany(value || '')}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Todas as empresas" />
+                  <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
                   {companies.map((company) => (
@@ -252,7 +301,7 @@ export default function Relatorios() {
               <Label>Funcionário</Label>
               <Select value={selectedEmployee || undefined} onValueChange={(value) => setSelectedEmployee(value || '')}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Todos os funcionários" />
+                  <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
                   {employees.map((employee) => (
@@ -267,29 +316,80 @@ export default function Relatorios() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total de Registros</CardTitle>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-green-900 dark:text-green-100">
+              Valor Total Gerado
+            </CardTitle>
+            <div className="h-10 w-10 rounded-full bg-green-500/20 flex items-center justify-center">
+              <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalSummary.records}</div>
+            <div className="text-3xl font-bold text-green-900 dark:text-green-100">
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSummary.total)}
+            </div>
+            <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+              Período: {format(new Date(startDate), 'dd/MM/yyyy', { locale: ptBR })} - {format(new Date(endDate), 'dd/MM/yyyy', { locale: ptBR })}
+            </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Horas Trabalhadas</CardTitle>
+
+        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-800">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              Horas Trabalhadas
+            </CardTitle>
+            <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalSummary.hours.toFixed(2)}h</div>
+            <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+              {totalSummary.hours.toFixed(2)}h
+            </div>
+            <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+              {totalSummary.records} registros de ponto
+            </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Geral</CardTitle>
+
+        <Card className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 border-purple-200 dark:border-purple-800">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-purple-900 dark:text-purple-100">
+              Diárias Pagas
+            </CardTitle>
+            <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+              <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSummary.total)}</div>
+            <div className="text-3xl font-bold text-purple-900 dark:text-purple-100">
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSummary.daily)}
+            </div>
+            <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">
+              Valores de diárias integrais e proporcionais
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-amber-900 dark:text-amber-100">
+              Horas Extras
+            </CardTitle>
+            <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-amber-900 dark:text-amber-100">
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSummary.overtime)}
+            </div>
+            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+              Valores de horas extras trabalhadas
+            </p>
           </CardContent>
         </Card>
       </div>
