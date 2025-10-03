@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Download, Calendar, DollarSign, Clock, FileText, TrendingUp } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subWeeks, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { calculateDailyAndOvertimeValues } from '@/utils/timeCalculations';
 
 interface Company {
   id: string;
@@ -122,14 +123,14 @@ export default function Relatorios() {
       .from('time_records')
       .select(`
         employee_id,
+        date,
         worked_hours,
-        daily_value,
-        overtime_value,
-        total_value,
         employees (
           name,
           companies (
-            name
+            name,
+            daily_rate,
+            overtime_rate
           )
         )
       `)
@@ -164,9 +165,25 @@ export default function Relatorios() {
       return;
     }
 
-    // Agrupar por funcionário
+    console.log('=== Gerando Relatório ===');
+    console.log('Registros encontrados:', data?.length || 0);
+
+    // Calcular valores dinamicamente e agrupar por funcionário
     const grouped = data?.reduce((acc: any, record: any) => {
       const empId = record.employee_id;
+      
+      // Parse da data corretamente
+      const [year, month, day] = record.date.split('-').map(Number);
+      const recordDate = new Date(year, month - 1, day);
+      
+      // Calcular valores dinamicamente com base nos valores atuais da empresa
+      const { dailyValue, overtimeValue, totalValue } = calculateDailyAndOvertimeValues(
+        record.worked_hours,
+        recordDate,
+        record.employees.companies.daily_rate,
+        record.employees.companies.overtime_rate
+      );
+
       if (!acc[empId]) {
         acc[empId] = {
           employee_id: empId,
@@ -179,15 +196,19 @@ export default function Relatorios() {
           total_value: 0,
         };
       }
+      
       acc[empId].total_records++;
       acc[empId].total_hours += record.worked_hours;
-      acc[empId].total_daily += record.daily_value;
-      acc[empId].total_overtime += record.overtime_value;
-      acc[empId].total_value += record.total_value;
+      acc[empId].total_daily += dailyValue;
+      acc[empId].total_overtime += overtimeValue;
+      acc[empId].total_value += totalValue;
+      
       return acc;
     }, {});
 
-    setReportData(Object.values(grouped || {}));
+    const reportResults = Object.values(grouped || {}) as ReportRecord[];
+    console.log('Funcionários no relatório:', reportResults.length);
+    setReportData(reportResults);
   };
 
   const exportToCSV = () => {
