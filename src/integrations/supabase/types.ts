@@ -113,6 +113,7 @@ export type Database = {
           exit_time: string
           id: string
           overtime_value: number | null
+          setor: Database["public"]["Enums"]["setor_type"] | null
           total_value: number | null
           updated_at: string
           worked_hours: number
@@ -126,6 +127,7 @@ export type Database = {
           exit_time: string
           id?: string
           overtime_value?: number | null
+          setor?: Database["public"]["Enums"]["setor_type"] | null
           total_value?: number | null
           updated_at?: string
           worked_hours: number
@@ -139,6 +141,7 @@ export type Database = {
           exit_time?: string
           id?: string
           overtime_value?: number | null
+          setor?: Database["public"]["Enums"]["setor_type"] | null
           total_value?: number | null
           updated_at?: string
           worked_hours?: number
@@ -189,6 +192,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user" | "dev"
+      setor_type: "QUALIDADE" | "LOGÍSTICA"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -317,6 +321,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user", "dev"],
+      setor_type: ["QUALIDADE", "LOGÍSTICA"],
     },
   },
 } as const

@@ -41,6 +41,12 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
   if (isRegularUser && window.location.pathname !== '/ponto-eletronico' && window.location.pathname !== '/settings') {
     return <Navigate to="/ponto-eletronico" replace />;
   }
+  
+  // Redirecionar admin/dev que tentarem acessar ponto eletrônico
+  const isAdminOrDev = hasRole('admin') || hasRole('dev');
+  if (isAdminOrDev && window.location.pathname === '/ponto-eletronico') {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <SidebarProvider>

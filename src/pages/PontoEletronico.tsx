@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,6 +34,7 @@ export default function PontoEletronico() {
   const [isLoading, setIsLoading] = useState(true);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
+  const [selectedSetor, setSelectedSetor] = useState<string>('');
   const { toast } = useToast();
   const currentDate = format(new Date(), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
   const currentTime = format(new Date(), 'HH:mm');
@@ -97,7 +99,7 @@ export default function PontoEletronico() {
   };
 
   const handleEntry = async () => {
-    if (!employee) return;
+    if (!employee || !selectedSetor) return;
 
     const now = new Date();
     const today = format(now, 'yyyy-MM-dd');
@@ -111,6 +113,7 @@ export default function PontoEletronico() {
         entry_time: time,
         exit_time: time, // Temporário, será atualizado na saída
         worked_hours: 0,
+        setor: selectedSetor as any,
       }])
       .select()
       .single();
@@ -260,15 +263,32 @@ export default function PontoEletronico() {
 
           {!hasEntryToday ? (
             <div className="text-center space-y-4">
-              <p className="text-muted-foreground">Você ainda não registrou entrada hoje</p>
-              <Button
-                size="lg"
-                className="w-full max-w-md h-20 text-xl"
-                onClick={handleEntry}
-              >
-                <LogIn className="mr-2 h-6 w-6" />
-                Registrar Entrada
-              </Button>
+              <p className="text-muted-foreground mb-4">Você ainda não registrou entrada hoje</p>
+              
+              <div className="space-y-4 max-w-md mx-auto">
+                <div className="space-y-2">
+                  <Label htmlFor="setor" className="text-base">Selecione o Setor</Label>
+                  <Select value={selectedSetor} onValueChange={setSelectedSetor}>
+                    <SelectTrigger id="setor" className="h-12 text-lg">
+                      <SelectValue placeholder="Escolha o setor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="QUALIDADE">Qualidade</SelectItem>
+                      <SelectItem value="LOGÍSTICA">Logística</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Button
+                  size="lg"
+                  className="w-full h-20 text-xl"
+                  onClick={handleEntry}
+                  disabled={!selectedSetor}
+                >
+                  <LogIn className="mr-2 h-6 w-6" />
+                  Registrar Entrada
+                </Button>
+              </div>
             </div>
           ) : !hasExitToday ? (
             <div className="space-y-4">
