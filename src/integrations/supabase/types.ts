@@ -14,6 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      companies: {
+        Row: {
+          created_at: string
+          daily_rate: number
+          id: string
+          name: string
+          overtime_rate: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          daily_rate: number
+          id?: string
+          name: string
+          overtime_rate: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          daily_rate?: number
+          id?: string
+          name?: string
+          overtime_rate?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      employees: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -34,6 +93,56 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      time_records: {
+        Row: {
+          created_at: string
+          daily_value: number
+          date: string
+          employee_id: string
+          entry_time: string
+          exit_time: string
+          id: string
+          overtime_value: number | null
+          total_value: number
+          updated_at: string
+          worked_hours: number
+        }
+        Insert: {
+          created_at?: string
+          daily_value: number
+          date: string
+          employee_id: string
+          entry_time: string
+          exit_time: string
+          id?: string
+          overtime_value?: number | null
+          total_value: number
+          updated_at?: string
+          worked_hours: number
+        }
+        Update: {
+          created_at?: string
+          daily_value?: number
+          date?: string
+          employee_id?: string
+          entry_time?: string
+          exit_time?: string
+          id?: string
+          overtime_value?: number | null
+          total_value?: number
+          updated_at?: string
+          worked_hours?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

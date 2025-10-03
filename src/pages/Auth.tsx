@@ -24,14 +24,20 @@ export default function Auth() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    await signIn(email, password);
+    const { error } = await signIn(email, password);
+    if (!error) {
+      navigate('/dashboard');
+    }
     setIsLoading(false);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    await signUp(email, password, fullName);
+    const { error } = await signUp(email, password, fullName);
+    if (!error) {
+      navigate('/dashboard');
+    }
     setIsLoading(false);
   };
 

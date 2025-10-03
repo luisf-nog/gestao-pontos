@@ -1,4 +1,4 @@
-import { Home, Users, Clock, Settings, LogOut } from 'lucide-react';
+import { Home, Users, Clock, Building2, BarChart3, LogOut } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -17,9 +17,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const menuItems = [
   { title: 'Dashboard', url: '/dashboard', icon: Home },
-  { title: 'Registrar Ponto', url: '/ponto', icon: Clock },
-  { title: 'Usuários', url: '/users', icon: Users, adminOnly: true },
-  { title: 'Configurações', url: '/settings', icon: Settings },
+  { title: 'Controle de Ponto', url: '/ponto', icon: Clock },
+  { title: 'Relatórios', url: '/relatorios', icon: BarChart3 },
+  { title: 'Funcionários', url: '/funcionarios', icon: Users },
+  { title: 'Empresas', url: '/empresas', icon: Building2, adminOnly: true },
 ];
 
 export function AppSidebar() {

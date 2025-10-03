@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `${window.location.origin}/dashboard`;
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -105,11 +105,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: 'Erro ao criar conta',
         description: error.message,
         variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Conta criada com sucesso!',
-        description: 'Verifique seu email para confirmar sua conta.',
       });
     }
 
