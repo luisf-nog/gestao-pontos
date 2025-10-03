@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -26,6 +27,9 @@ interface Employee {
   company_id: string;
   user_id: string | null;
   photo_url: string | null;
+  birth_date: string | null;
+  phone: string | null;
+  notes: string | null;
   companies: {
     name: string;
   };
@@ -48,6 +52,9 @@ export default function Funcionarios() {
     name: '',
     email: '',
     company_id: '',
+    birth_date: '',
+    phone: '',
+    notes: '',
   });
 
   // Gerar email automaticamente baseado no nome e empresa
@@ -241,6 +248,9 @@ export default function Funcionarios() {
           email: formData.email,
           company_id: formData.company_id,
           photo_url: photoUrl,
+          birth_date: formData.birth_date || null,
+          phone: formData.phone || null,
+          notes: formData.notes || null,
         })
         .eq('id', editingEmployee.id);
 
@@ -264,6 +274,9 @@ export default function Funcionarios() {
           name: formData.name,
           email: formData.email,
           company_id: formData.company_id,
+          birth_date: formData.birth_date || null,
+          phone: formData.phone || null,
+          notes: formData.notes || null,
         }])
         .select()
         .single();
@@ -339,6 +352,9 @@ export default function Funcionarios() {
       name: employee.name,
       email: employee.email || '',
       company_id: employee.company_id,
+      birth_date: employee.birth_date || '',
+      phone: employee.phone || '',
+      notes: employee.notes || '',
     });
     setPhotoPreview(employee.photo_url);
     setPhotoFile(null);
@@ -375,6 +391,9 @@ export default function Funcionarios() {
       name: '',
       email: '',
       company_id: '',
+      birth_date: '',
+      phone: '',
+      notes: '',
     });
     setNameCheckStatus('idle');
     setDuplicateEmployees([]);
@@ -389,6 +408,18 @@ export default function Funcionarios() {
   };
 
   const isAdmin = hasRole('admin') || hasRole('dev');
+
+  const calculateAge = (birthDate: string | null): number | null => {
+    if (!birthDate) return null;
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
 
   return (
     <div className="space-y-6">
@@ -545,6 +576,50 @@ export default function Funcionarios() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="birth_date">Data de Nascimento (opcional)</Label>
+                      <Input
+                        id="birth_date"
+                        type="date"
+                        value={formData.birth_date}
+                        onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                      />
+                      {formData.birth_date && (
+                        <p className="text-xs text-muted-foreground">
+                          Idade: {calculateAge(formData.birth_date)} anos
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Telefone (opcional)</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="(00) 00000-0000"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        maxLength={20}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Observações Adicionais (opcional)</Label>
+                    <Textarea
+                      id="notes"
+                      placeholder="Informações adicionais sobre o funcionário"
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      maxLength={500}
+                      rows={3}
+                      className="resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {formData.notes.length}/500 caracteres
+                    </p>
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={handleDialogClose}>
@@ -573,6 +648,8 @@ export default function Funcionarios() {
               <TableRow>
                 <TableHead className="w-12"></TableHead>
                 <TableHead>Nome</TableHead>
+                <TableHead>Idade</TableHead>
+                <TableHead>Telefone</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Empresa</TableHead>
                 <TableHead>Acesso Ponto</TableHead>
@@ -582,7 +659,7 @@ export default function Funcionarios() {
             <TableBody>
               {employees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 6 : 5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground">
                     Nenhum funcionário cadastrado
                   </TableCell>
                 </TableRow>
@@ -600,7 +677,27 @@ export default function Funcionarios() {
                         )}
                       </Avatar>
                     </TableCell>
-                    <TableCell className="font-medium">{employee.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <div>{employee.name}</div>
+                      {employee.notes && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {employee.notes}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {employee.birth_date ? (
+                        <div>
+                          <div className="font-medium">{calculateAge(employee.birth_date)} anos</div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(employee.birth_date + 'T00:00:00').toLocaleDateString('pt-BR')}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{employee.phone || '-'}</TableCell>
                     <TableCell>{employee.email || '-'}</TableCell>
                     <TableCell>{employee.companies.name}</TableCell>
                     <TableCell>

@@ -43,31 +43,40 @@ export type Database = {
       }
       employees: {
         Row: {
+          birth_date: string | null
           company_id: string
           created_at: string
           email: string | null
           id: string
           name: string
+          notes: string | null
+          phone: string | null
           photo_url: string | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          birth_date?: string | null
           company_id: string
           created_at?: string
           email?: string | null
           id?: string
           name: string
+          notes?: string | null
+          phone?: string | null
           photo_url?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          birth_date?: string | null
           company_id?: string
           created_at?: string
           email?: string | null
           id?: string
           name?: string
+          notes?: string | null
+          phone?: string | null
           photo_url?: string | null
           updated_at?: string
           user_id?: string | null
