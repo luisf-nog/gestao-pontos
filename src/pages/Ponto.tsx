@@ -92,7 +92,8 @@ export default function Ponto() {
       .from('time_records')
       .select('*, employees(name, companies(name))')
       .order('date', { ascending: false })
-      .order('entry_time', { ascending: false });
+      .order('entry_time', { ascending: false })
+      .limit(50);
 
     if (error) {
       toast({
@@ -264,9 +265,9 @@ export default function Ponto() {
             Registre e gerencie os horários dos funcionários
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setIsDialogOpen(true)}>
+            <Button>
               <Plus className="mr-2 h-4 w-4" />
               Novo Registro
             </Button>

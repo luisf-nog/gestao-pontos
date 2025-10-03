@@ -289,7 +289,7 @@ export default function Relatorios() {
             <CardTitle className="text-sm font-medium">Total Geral</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R$ {totalSummary.total.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSummary.total)}</div>
           </CardContent>
         </Card>
       </div>
@@ -329,13 +329,13 @@ export default function Relatorios() {
                     <TableCell>{record.total_records}</TableCell>
                     <TableCell>{record.total_hours.toFixed(2)}h</TableCell>
                     <TableCell className="text-green-600">
-                      R$ {record.total_daily.toFixed(2)}
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(record.total_daily)}
                     </TableCell>
                     <TableCell className="text-blue-600">
-                      R$ {record.total_overtime.toFixed(2)}
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(record.total_overtime)}
                     </TableCell>
                     <TableCell className="font-semibold">
-                      R$ {record.total_value.toFixed(2)}
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(record.total_value)}
                     </TableCell>
                   </TableRow>
                 ))
