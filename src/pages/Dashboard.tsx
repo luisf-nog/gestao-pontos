@@ -62,9 +62,9 @@ export default function Dashboard() {
       .select('id, total_value, daily_value, overtime_value')
       .gte('date', format(startOfMonth, 'yyyy-MM-dd'));
 
-    const monthTotal = monthRecords?.reduce((sum, record) => sum + record.total_value, 0) || 0;
-    const dailyTotal = monthRecords?.reduce((sum, record) => sum + record.daily_value, 0) || 0;
-    const overtimeTotal = monthRecords?.reduce((sum, record) => sum + record.overtime_value, 0) || 0;
+    const monthTotal = monthRecords?.reduce((sum, record) => sum + (record.total_value || 0), 0) || 0;
+    const dailyTotal = monthRecords?.reduce((sum, record) => sum + (record.daily_value || 0), 0) || 0;
+    const overtimeTotal = monthRecords?.reduce((sum, record) => sum + (record.overtime_value || 0), 0) || 0;
 
     // Buscar registros recentes
     const { data: recent } = await supabase
@@ -208,7 +208,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <span className="font-semibold text-sm">
-                      R$ {record.total_value.toFixed(2)}
+                      R$ {(record.total_value || 0).toFixed(2)}
                     </span>
                   </div>
                 ))
