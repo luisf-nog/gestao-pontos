@@ -97,40 +97,40 @@ export type Database = {
       time_records: {
         Row: {
           created_at: string
-          daily_value: number
+          daily_value: number | null
           date: string
           employee_id: string
           entry_time: string
           exit_time: string
           id: string
           overtime_value: number | null
-          total_value: number
+          total_value: number | null
           updated_at: string
           worked_hours: number
         }
         Insert: {
           created_at?: string
-          daily_value: number
+          daily_value?: number | null
           date: string
           employee_id: string
           entry_time: string
           exit_time: string
           id?: string
           overtime_value?: number | null
-          total_value: number
+          total_value?: number | null
           updated_at?: string
           worked_hours: number
         }
         Update: {
           created_at?: string
-          daily_value?: number
+          daily_value?: number | null
           date?: string
           employee_id?: string
           entry_time?: string
           exit_time?: string
           id?: string
           overtime_value?: number | null
-          total_value?: number
+          total_value?: number | null
           updated_at?: string
           worked_hours?: number
         }

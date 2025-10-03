@@ -163,13 +163,16 @@ export default function Ponto() {
 
     const workedHours = calculateWorkedHours(formData.entry_time, formData.exit_time);
 
-    // Não salvar valores calculados - serão calculados dinamicamente ao exibir
+    // Valores serão calculados dinamicamente ao exibir
     const recordData = {
       employee_id: formData.employee_id,
       date: formData.date,
       entry_time: formData.entry_time,
       exit_time: formData.exit_time,
       worked_hours: workedHours,
+      daily_value: null,
+      overtime_value: null,
+      total_value: null,
     };
 
     if (editingRecord) {
