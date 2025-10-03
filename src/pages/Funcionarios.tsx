@@ -302,6 +302,40 @@ export default function Funcionarios() {
 
   const isAdmin = hasRole('admin') || hasRole('dev');
 
+  const handleBulkCreateUsers = async () => {
+    try {
+      toast({
+        title: 'Processando...',
+        description: 'Criando usuários para funcionários existentes. Isso pode levar alguns minutos.',
+      });
+
+      const { data, error } = await supabase.functions.invoke('create-bulk-employee-users');
+
+      if (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao criar usuários em lote',
+          description: error.message,
+        });
+        return;
+      }
+
+      toast({
+        title: 'Usuários criados!',
+        description: data.message,
+      });
+
+      fetchEmployees();
+    } catch (err) {
+      console.error('Erro ao criar usuários em lote:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao criar usuários',
+        description: 'Ocorreu um erro ao processar a solicitação.',
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -312,7 +346,11 @@ export default function Funcionarios() {
           </p>
         </div>
         {isAdmin && (
-          <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleBulkCreateUsers}>
+              Gerar Usuários em Lote
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
             <DialogTrigger asChild>
               <Button onClick={() => setIsDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -419,6 +457,7 @@ export default function Funcionarios() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         )}
       </div>
 

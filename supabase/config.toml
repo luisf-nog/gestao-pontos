@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.change-password]
 verify_jwt = true
+
+[functions.create-bulk-employee-users]
+verify_jwt = false
