@@ -90,7 +90,7 @@ export default function Ponto() {
   const fetchTimeRecords = async () => {
     const { data, error } = await supabase
       .from('time_records')
-      .select('*, employees(name, companies(name))')
+      .select('*, employees(name, companies(name, daily_rate, overtime_rate))')
       .order('date', { ascending: false })
       .order('entry_time', { ascending: false });
 
@@ -104,8 +104,28 @@ export default function Ponto() {
       return;
     }
 
-    console.log('Registros carregados:', data?.length || 0);
-    setTimeRecords(data || []);
+    // Calcular valores dinamicamente com base nos valores atuais da empresa
+    const recordsWithCalculatedValues = (data || []).map((record: any) => {
+      const [year, month, day] = record.date.split('-').map(Number);
+      const recordDate = new Date(year, month - 1, day);
+      
+      const { dailyValue, overtimeValue, totalValue } = calculateDailyAndOvertimeValues(
+        record.worked_hours,
+        recordDate,
+        record.employees.companies.daily_rate,
+        record.employees.companies.overtime_rate
+      );
+
+      return {
+        ...record,
+        daily_value: dailyValue,
+        overtime_value: overtimeValue,
+        total_value: totalValue,
+      };
+    });
+
+    console.log('Registros carregados:', recordsWithCalculatedValues.length);
+    setTimeRecords(recordsWithCalculatedValues);
   };
 
   const filterRecords = () => {
@@ -142,25 +162,14 @@ export default function Ponto() {
     }
 
     const workedHours = calculateWorkedHours(formData.entry_time, formData.exit_time);
-    // Parse date correctly for any date (including retroactive)
-    const [year, month, day] = formData.date.split('-').map(Number);
-    const recordDate = new Date(year, month - 1, day);
-    const { dailyValue, overtimeValue, totalValue } = calculateDailyAndOvertimeValues(
-      workedHours,
-      recordDate,
-      employee.companies.daily_rate,
-      employee.companies.overtime_rate
-    );
 
+    // Não salvar valores calculados - serão calculados dinamicamente ao exibir
     const recordData = {
       employee_id: formData.employee_id,
       date: formData.date,
       entry_time: formData.entry_time,
       exit_time: formData.exit_time,
       worked_hours: workedHours,
-      daily_value: dailyValue,
-      overtime_value: overtimeValue,
-      total_value: totalValue,
     };
 
     if (editingRecord) {
