@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -211,7 +212,7 @@ export default function Relatorios() {
     setReportData(reportResults);
   };
 
-  const exportToCSV = () => {
+  const exportToExcel = () => {
     if (reportData.length === 0) {
       toast({
         variant: 'destructive',
@@ -221,35 +222,28 @@ export default function Relatorios() {
       return;
     }
 
-    const headers = ['Funcionario', 'Empresa', 'Registros', 'Horas', 'Diarias', 'Extras', 'Total'];
-    const rows = reportData.map(record => [
-      record.employee_name,
-      record.company_name,
-      record.total_records,
-      record.total_hours.toFixed(2).replace('.', ','),
-      record.total_daily.toFixed(2).replace('.', ','),
-      record.total_overtime.toFixed(2).replace('.', ','),
-      record.total_value.toFixed(2).replace('.', ','),
-    ]);
+    const worksheetData = [
+      ['Funcionário', 'Empresa', 'Registros', 'Horas', 'Diárias', 'Extras', 'Total'],
+      ...reportData.map(record => [
+        record.employee_name,
+        record.company_name,
+        record.total_records,
+        record.total_hours.toFixed(2),
+        record.total_daily.toFixed(2),
+        record.total_overtime.toFixed(2),
+        record.total_value.toFixed(2),
+      ])
+    ];
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(',')),
-    ].join('\n');
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatório');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `relatorio-${startDate}-${endDate}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    XLSX.writeFile(workbook, `relatorio-${startDate}-${endDate}.xlsx`);
 
     toast({
       title: 'Relatório exportado!',
-      description: 'O arquivo CSV foi baixado com sucesso.',
+      description: 'O arquivo Excel foi baixado com sucesso.',
     });
   };
 
@@ -278,9 +272,9 @@ export default function Relatorios() {
             <RefreshCw className="mr-2 h-4 w-4" />
             Atualizar
           </Button>
-          <Button onClick={exportToCSV} disabled={reportData.length === 0}>
+          <Button onClick={exportToExcel} disabled={reportData.length === 0}>
             <Download className="mr-2 h-4 w-4" />
-            Exportar CSV
+            Exportar Excel
           </Button>
         </div>
       </div>

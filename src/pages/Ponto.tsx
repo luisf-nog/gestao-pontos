@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -316,7 +317,7 @@ export default function Ponto() {
     resetForm();
   };
 
-  const exportToCSV = () => {
+  const exportToExcel = () => {
     if (timeRecords.length === 0) {
       toast({
         variant: 'destructive',
@@ -326,37 +327,30 @@ export default function Ponto() {
       return;
     }
 
-    const headers = ['Funcionario', 'Empresa', 'Data', 'Entrada', 'Saida', 'Horas', 'Diaria', 'Extra', 'Total'];
-    const rows = timeRecords.map(record => [
-      record.employees.name,
-      record.employees.companies.name,
-      format(new Date(record.date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR }),
-      record.entry_time,
-      record.exit_time,
-      record.worked_hours.toFixed(2).replace('.', ','),
-      record.daily_value.toFixed(2).replace('.', ','),
-      record.overtime_value.toFixed(2).replace('.', ','),
-      record.total_value.toFixed(2).replace('.', ','),
-    ]);
+    const worksheetData = [
+      ['Funcionário', 'Empresa', 'Data', 'Entrada', 'Saída', 'Horas', 'Diária', 'Extra', 'Total'],
+      ...timeRecords.map(record => [
+        record.employees.name,
+        record.employees.companies.name,
+        format(new Date(record.date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR }),
+        record.entry_time,
+        record.exit_time,
+        record.worked_hours.toFixed(2),
+        record.daily_value.toFixed(2),
+        record.overtime_value.toFixed(2),
+        record.total_value.toFixed(2),
+      ])
+    ];
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(',')),
-    ].join('\n');
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Registros de Ponto');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `registros-ponto-${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    XLSX.writeFile(workbook, `registros-ponto-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
 
     toast({
       title: 'Registros exportados!',
-      description: 'O arquivo CSV foi baixado com sucesso.',
+      description: 'O arquivo Excel foi baixado com sucesso.',
     });
   };
 
@@ -374,9 +368,9 @@ export default function Ponto() {
             <RefreshCw className="mr-2 h-4 w-4" />
             Atualizar
           </Button>
-          <Button variant="outline" onClick={exportToCSV} disabled={timeRecords.length === 0}>
+          <Button variant="outline" onClick={exportToExcel} disabled={timeRecords.length === 0}>
             <Download className="mr-2 h-4 w-4" />
-            Exportar CSV
+            Exportar Excel
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
