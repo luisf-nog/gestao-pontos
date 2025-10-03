@@ -85,6 +85,15 @@ export default function Settings() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!passwordData.currentPassword) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Por favor, digite sua senha atual.',
+      });
+      return;
+    }
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast({
         variant: 'destructive',
@@ -104,6 +113,22 @@ export default function Settings() {
     }
 
     setIsLoading(true);
+
+    // Primeiro verificar a senha atual
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user?.email || '',
+      password: passwordData.currentPassword,
+    });
+
+    if (signInError) {
+      setIsLoading(false);
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Senha atual incorreta.',
+      });
+      return;
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke('change-password', {
@@ -211,7 +236,18 @@ export default function Settings() {
           <CardContent>
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="new-password">Nova Senha</Label>
+                <Label htmlFor="current-password">Senha Atual *</Label>
+                <Input 
+                  id="current-password" 
+                  type="password"
+                  placeholder="Digite sua senha atual"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Nova Senha *</Label>
                 <Input 
                   id="new-password" 
                   type="password"
