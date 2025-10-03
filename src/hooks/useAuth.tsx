@@ -12,8 +12,9 @@ interface AuthContextType {
   isLoading: boolean;
   hasRole: (role: UserRole) => boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any; needsEmailConfirmation?: boolean }>;
   signOut: () => Promise<void>;
+  resendConfirmationEmail: (email: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -76,11 +77,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
-      toast({
-        title: 'Erro ao fazer login',
-        description: error.message,
-        variant: 'destructive',
-      });
+      // Tratamento especial para email não confirmado
+      if (error.message.includes('Email not confirmed')) {
+        toast({
+          title: 'Email não confirmado',
+          description: 'Por favor, verifique sua caixa de entrada e confirme seu email antes de fazer login.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Erro ao fazer login',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
     }
 
     return { error };
@@ -89,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/dashboard`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -106,9 +116,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: error.message,
         variant: 'destructive',
       });
+      return { error };
     }
 
-    return { error };
+    // Verifica se o usuário precisa confirmar o email
+    const needsEmailConfirmation = data.user && !data.session;
+
+    return { error, needsEmailConfirmation };
   };
 
   const signOut = async () => {
@@ -118,6 +132,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       title: 'Logout realizado',
       description: 'Você saiu da sua conta.',
     });
+  };
+
+  const resendConfirmationEmail = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+    });
+
+    if (error) {
+      toast({
+        title: 'Erro ao reenviar email',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Email reenviado',
+        description: 'Verifique sua caixa de entrada.',
+      });
+    }
+
+    return { error };
   };
 
   const hasRole = (role: UserRole) => roles.includes(role);
@@ -131,7 +167,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       hasRole,
       signIn, 
       signUp, 
-      signOut 
+      signOut,
+      resendConfirmationEmail
     }}>
       {children}
     </AuthContext.Provider>
