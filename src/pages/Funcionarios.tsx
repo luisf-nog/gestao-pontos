@@ -229,7 +229,7 @@ export default function Funcionarios() {
     resetForm();
   };
 
-  const isAdmin = hasRole('admin');
+  const isAdmin = hasRole('admin') || hasRole('dev');
 
   return (
     <div className="space-y-6">

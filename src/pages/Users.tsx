@@ -20,7 +20,7 @@ export default function Users() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!hasRole('admin')) {
+    if (!hasRole('admin') && !hasRole('dev')) {
       navigate('/dashboard');
       return;
     }
@@ -66,7 +66,7 @@ export default function Users() {
     fetchUsers();
   }, [hasRole, navigate]);
 
-  if (!hasRole('admin')) {
+  if (!hasRole('admin') && !hasRole('dev')) {
     return null;
   }
 
