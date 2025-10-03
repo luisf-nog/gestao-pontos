@@ -170,7 +170,7 @@ export default function Ponto() {
   };
 
   const filterRecords = () => {
-    let filtered = timeRecords;
+    let filtered = [...timeRecords];
 
     if (searchTerm) {
       filtered = filtered.filter(record =>
