@@ -155,7 +155,7 @@ export default function Empresas() {
     resetForm();
   };
 
-  const isAdmin = hasRole('admin') || hasRole('dev');
+  const isAdmin = hasRole('dev');
 
   return (
     <div className="space-y-6">
