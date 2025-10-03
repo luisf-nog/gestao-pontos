@@ -50,6 +50,7 @@ export type Database = {
           id: string
           name: string
           notes: string | null
+          personal_email: string | null
           phone: string | null
           photo_url: string | null
           updated_at: string
@@ -63,6 +64,7 @@ export type Database = {
           id?: string
           name: string
           notes?: string | null
+          personal_email?: string | null
           phone?: string | null
           photo_url?: string | null
           updated_at?: string
@@ -76,6 +78,7 @@ export type Database = {
           id?: string
           name?: string
           notes?: string | null
+          personal_email?: string | null
           phone?: string | null
           photo_url?: string | null
           updated_at?: string

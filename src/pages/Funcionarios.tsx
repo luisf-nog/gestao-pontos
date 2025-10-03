@@ -24,6 +24,7 @@ interface Employee {
   id: string;
   name: string;
   email: string | null;
+  personal_email: string | null;
   company_id: string;
   user_id: string | null;
   photo_url: string | null;
@@ -51,6 +52,7 @@ export default function Funcionarios() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    personal_email: '',
     company_id: '',
     birth_date: '',
     phone: '',
@@ -246,6 +248,7 @@ export default function Funcionarios() {
         .update({
           name: formData.name,
           email: formData.email,
+          personal_email: formData.personal_email || null,
           company_id: formData.company_id,
           photo_url: photoUrl,
           birth_date: formData.birth_date || null,
@@ -273,6 +276,7 @@ export default function Funcionarios() {
         .insert([{
           name: formData.name,
           email: formData.email,
+          personal_email: formData.personal_email || null,
           company_id: formData.company_id,
           birth_date: formData.birth_date || null,
           phone: formData.phone || null,
@@ -351,6 +355,7 @@ export default function Funcionarios() {
     setFormData({
       name: employee.name,
       email: employee.email || '',
+      personal_email: employee.personal_email || '',
       company_id: employee.company_id,
       birth_date: employee.birth_date || '',
       phone: employee.phone || '',
@@ -390,6 +395,7 @@ export default function Funcionarios() {
     setFormData({
       name: '',
       email: '',
+      personal_email: '',
       company_id: '',
       birth_date: '',
       phone: '',
@@ -558,6 +564,20 @@ export default function Funcionarios() {
                     </p>
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="personal_email">Email Pessoal (opcional)</Label>
+                    <Input
+                      id="personal_email"
+                      type="email"
+                      placeholder="email.pessoal@exemplo.com"
+                      value={formData.personal_email}
+                      onChange={(e) => setFormData({ ...formData, personal_email: e.target.value })}
+                      maxLength={255}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Email pessoal do funcionário para contato
+                    </p>
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="company">Empresa</Label>
                     <Select
                       value={formData.company_id}
@@ -650,7 +670,8 @@ export default function Funcionarios() {
                 <TableHead>Nome</TableHead>
                 <TableHead>Idade</TableHead>
                 <TableHead>Telefone</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>Email Corporativo</TableHead>
+                <TableHead>Email Pessoal</TableHead>
                 <TableHead>Empresa</TableHead>
                 <TableHead>Acesso Ponto</TableHead>
                 {isAdmin && <TableHead className="text-right">Ações</TableHead>}
@@ -659,7 +680,7 @@ export default function Funcionarios() {
             <TableBody>
               {employees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={isAdmin ? 9 : 8} className="text-center text-muted-foreground">
                     Nenhum funcionário cadastrado
                   </TableCell>
                 </TableRow>
@@ -699,6 +720,7 @@ export default function Funcionarios() {
                     </TableCell>
                     <TableCell>{employee.phone || '-'}</TableCell>
                     <TableCell>{employee.email || '-'}</TableCell>
+                    <TableCell>{employee.personal_email || '-'}</TableCell>
                     <TableCell>{employee.companies.name}</TableCell>
                     <TableCell>
                       <Badge variant={employee.user_id ? 'default' : 'secondary'}>
@@ -715,13 +737,15 @@ export default function Funcionarios() {
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(employee.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {hasRole('dev') && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(employee.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     )}
