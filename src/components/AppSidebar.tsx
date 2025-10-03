@@ -18,10 +18,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 const menuItems = [
   { title: 'Dashboard', url: '/dashboard', icon: Home },
   { title: 'Controle de Ponto', url: '/ponto', icon: Clock },
-  { title: 'Relatórios', url: '/relatorios', icon: BarChart3 },
+  { title: 'Relatórios', url: '/relatorios', icon: BarChart3, adminOnly: true },
   { title: 'Funcionários', url: '/funcionarios', icon: Users, adminOnly: true },
   { title: 'Empresas', url: '/empresas', icon: Building2, adminOnly: true },
-  { title: 'Importar Dados', url: '/importar', icon: Upload, adminOnly: true },
+  { title: 'Importar Dados', url: '/importar', icon: Upload, devOnly: true },
 ];
 
 export function AppSidebar() {
@@ -43,6 +43,10 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => {
+                // Importar Dados: apenas dev
+                if (item.devOnly && !hasRole('dev')) return null;
+                
+                // Outras páginas admin: admin ou dev
                 if (item.adminOnly && !hasRole('admin') && !hasRole('dev')) return null;
                 
                 return (

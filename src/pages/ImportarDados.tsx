@@ -9,6 +9,8 @@ import { Upload, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react'
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { calculateWorkedHours, calculateDailyAndOvertimeValues } from '@/utils/timeCalculations';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface ImportResult {
   companies: number;
@@ -23,6 +25,14 @@ export default function ImportarDados() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
   const { toast } = useToast();
+  const { hasRole } = useAuth();
+  const navigate = useNavigate();
+
+  // Apenas dev pode acessar
+  if (!hasRole('dev')) {
+    navigate('/dashboard');
+    return null;
+  }
 
   const parseCSVLine = (line: string): string[] => {
     return line.split(';').map(field => field.trim());
