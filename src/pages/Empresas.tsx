@@ -155,7 +155,7 @@ export default function Empresas() {
     resetForm();
   };
 
-  const isAdmin = hasRole('dev');
+  const isDev = hasRole('dev');
 
   return (
     <div className="space-y-6">
@@ -166,7 +166,7 @@ export default function Empresas() {
             Gerencie as empresas terceirizadas e seus valores
           </p>
         </div>
-        {isAdmin && (
+        {isDev && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -248,13 +248,13 @@ export default function Empresas() {
                 <TableHead>Nome</TableHead>
                 <TableHead>Valor da Diária</TableHead>
                 <TableHead>Valor Hora Extra</TableHead>
-                {isAdmin && <TableHead className="text-right">Ações</TableHead>}
+                {isDev && <TableHead className="text-right">Ações</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {companies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 4 : 3} className="text-center text-muted-foreground">
+                  <TableCell colSpan={isDev ? 4 : 3} className="text-center text-muted-foreground">
                     Nenhuma empresa cadastrada
                   </TableCell>
                 </TableRow>
@@ -264,7 +264,7 @@ export default function Empresas() {
                     <TableCell className="font-medium">{company.name}</TableCell>
                     <TableCell>R$ {company.daily_rate.toFixed(2)}</TableCell>
                     <TableCell>R$ {company.overtime_rate.toFixed(2)}</TableCell>
-                    {isAdmin && (
+                    {isDev && (
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
