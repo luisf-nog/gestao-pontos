@@ -19,9 +19,9 @@ const menuItems = [
   { title: 'Dashboard', url: '/dashboard', icon: Home },
   { title: 'Controle de Ponto', url: '/ponto', icon: Clock },
   { title: 'Relatórios', url: '/relatorios', icon: BarChart3 },
-  { title: 'Funcionários', url: '/funcionarios', icon: Users },
-  { title: 'Empresas', url: '/empresas', icon: Building2, devOnly: true },
-  { title: 'Importar Dados', url: '/importar', icon: Upload, devOnly: true },
+  { title: 'Funcionários', url: '/funcionarios', icon: Users, adminOnly: true },
+  { title: 'Empresas', url: '/empresas', icon: Building2, adminOnly: true },
+  { title: 'Importar Dados', url: '/importar', icon: Upload, adminOnly: true },
 ];
 
 export function AppSidebar() {
@@ -41,7 +41,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => {
-                if (item.devOnly && !hasRole('dev')) return null;
+                if (item.adminOnly && !hasRole('admin') && !hasRole('dev')) return null;
                 
                 return (
                   <SidebarMenuItem key={item.title}>
