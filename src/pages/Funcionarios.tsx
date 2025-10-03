@@ -420,7 +420,6 @@ export default function Funcionarios() {
   };
 
   const isAdmin = hasRole('admin') || hasRole('dev');
-  };
 
   return (
     <div className="space-y-6">
