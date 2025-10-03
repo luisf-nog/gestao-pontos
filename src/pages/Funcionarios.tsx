@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,7 +21,9 @@ interface Company {
 interface Employee {
   id: string;
   name: string;
+  email: string | null;
   company_id: string;
+  user_id: string | null;
   companies: {
     name: string;
   };
@@ -38,6 +41,7 @@ export default function Funcionarios() {
 
   const [formData, setFormData] = useState({
     name: '',
+    email: '',
     company_id: '',
   });
 
@@ -134,6 +138,7 @@ export default function Funcionarios() {
         .from('employees')
         .update({
           name: formData.name,
+          email: formData.email,
           company_id: formData.company_id,
         })
         .eq('id', editingEmployee.id);
@@ -152,12 +157,15 @@ export default function Funcionarios() {
         description: 'Os dados foram atualizados com sucesso.',
       });
     } else {
-      const { error } = await supabase
+      const { data: newEmployee, error } = await supabase
         .from('employees')
         .insert([{
           name: formData.name,
+          email: formData.email,
           company_id: formData.company_id,
-        }]);
+        }])
+        .select()
+        .single();
 
       if (error) {
         toast({
@@ -168,10 +176,43 @@ export default function Funcionarios() {
         return;
       }
 
-      toast({
-        title: 'Funcionário cadastrado!',
-        description: 'O novo funcionário foi adicionado com sucesso.',
-      });
+      // Criar usuário se email foi fornecido
+      if (formData.email && newEmployee) {
+        try {
+          const { data, error: functionError } = await supabase.functions.invoke('create-employee-user', {
+            body: {
+              employeeId: newEmployee.id,
+              email: formData.email,
+              name: formData.name
+            }
+          });
+
+          if (functionError) {
+            toast({
+              variant: 'destructive',
+              title: 'Funcionário criado mas erro ao criar usuário',
+              description: functionError.message,
+            });
+          } else {
+            toast({
+              title: 'Funcionário cadastrado!',
+              description: `Usuário criado com email: ${formData.email} e senha padrão: 123`,
+            });
+          }
+        } catch (err) {
+          console.error('Erro ao criar usuário:', err);
+          toast({
+            variant: 'destructive',
+            title: 'Funcionário criado',
+            description: 'Mas houve erro ao criar acesso ao ponto eletrônico.',
+          });
+        }
+      } else {
+        toast({
+          title: 'Funcionário cadastrado!',
+          description: 'O novo funcionário foi adicionado com sucesso.',
+        });
+      }
     }
 
     setIsDialogOpen(false);
@@ -184,6 +225,7 @@ export default function Funcionarios() {
     setEditingEmployee(employee);
     setFormData({
       name: employee.name,
+      email: employee.email || '',
       company_id: employee.company_id,
     });
     setIsDialogOpen(true);
@@ -217,6 +259,7 @@ export default function Funcionarios() {
   const resetForm = () => {
     setFormData({
       name: '',
+      email: '',
       company_id: '',
     });
     setNameCheckStatus('idle');
@@ -301,6 +344,20 @@ export default function Funcionarios() {
                     )}
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="email">Email (para acesso ao ponto eletrônico)</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="email@empresa.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      maxLength={255}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {editingEmployee ? 'Não será criado novo usuário ao editar' : 'Será criado um usuário com senha padrão: 123'}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="company">Empresa</Label>
                     <Select
                       value={formData.company_id}
@@ -346,14 +403,16 @@ export default function Funcionarios() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Empresa</TableHead>
+                <TableHead>Acesso Ponto</TableHead>
                 {isAdmin && <TableHead className="text-right">Ações</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {employees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 3 : 2} className="text-center text-muted-foreground">
+                  <TableCell colSpan={isAdmin ? 5 : 4} className="text-center text-muted-foreground">
                     Nenhum funcionário cadastrado
                   </TableCell>
                 </TableRow>
@@ -361,7 +420,13 @@ export default function Funcionarios() {
                 employees.map((employee) => (
                   <TableRow key={employee.id}>
                     <TableCell className="font-medium">{employee.name}</TableCell>
+                    <TableCell>{employee.email || '-'}</TableCell>
                     <TableCell>{employee.companies.name}</TableCell>
+                    <TableCell>
+                      <Badge variant={employee.user_id ? 'default' : 'secondary'}>
+                        {employee.user_id ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </TableCell>
                     {isAdmin && (
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
