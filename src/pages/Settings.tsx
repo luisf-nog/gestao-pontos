@@ -34,9 +34,9 @@ export default function Settings() {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('full_name')
+      .select('full_name, phone')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Erro ao carregar perfil:', error);
@@ -46,7 +46,7 @@ export default function Settings() {
     if (data) {
       setProfileData({
         full_name: data.full_name || '',
-        phone: '',
+        phone: data.phone || '',
       });
     }
   };
@@ -61,6 +61,7 @@ export default function Settings() {
       .from('profiles')
       .update({
         full_name: profileData.full_name,
+        phone: profileData.phone,
       })
       .eq('id', user.id);
 
