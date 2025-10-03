@@ -42,6 +42,12 @@ export default function Relatorios() {
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const { toast } = useToast();
 
+  // Helper para fazer parse correto de data sem problema de timezone
+  const parseLocalDate = (dateString: string): Date => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   const setQuickFilter = (filter: 'week' | 'lastWeek' | 'fortnight' | 'lastFortnight' | 'month') => {
     const now = new Date();
     switch (filter) {
@@ -347,7 +353,7 @@ export default function Relatorios() {
               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSummary.total)}
             </div>
             <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-              Período: {format(new Date(startDate), 'dd/MM/yyyy', { locale: ptBR })} - {format(new Date(endDate), 'dd/MM/yyyy', { locale: ptBR })}
+              Período: {format(parseLocalDate(startDate), 'dd/MM/yyyy', { locale: ptBR })} - {format(parseLocalDate(endDate), 'dd/MM/yyyy', { locale: ptBR })}
             </p>
           </CardContent>
         </Card>
