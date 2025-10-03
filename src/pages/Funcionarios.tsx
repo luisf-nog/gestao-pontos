@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,10 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface Company {
   id: string;
@@ -30,6 +31,8 @@ export default function Funcionarios() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [nameCheckStatus, setNameCheckStatus] = useState<'idle' | 'checking' | 'duplicate' | 'available'>('idle');
+  const [duplicateEmployees, setDuplicateEmployees] = useState<Employee[]>([]);
   const { toast } = useToast();
   const { hasRole } = useAuth();
 
@@ -78,6 +81,50 @@ export default function Funcionarios() {
 
     setEmployees(data || []);
   };
+
+  const checkNameDuplicate = useCallback(async (name: string) => {
+    if (!name || name.trim().length < 2) {
+      setNameCheckStatus('idle');
+      setDuplicateEmployees([]);
+      return;
+    }
+
+    setNameCheckStatus('checking');
+
+    const { data, error } = await supabase
+      .from('employees')
+      .select('id, name, companies(name)')
+      .ilike('name', `%${name.trim()}%`);
+
+    if (error) {
+      setNameCheckStatus('idle');
+      return;
+    }
+
+    // Filtrar o funcionário atual se estiver editando
+    const filteredData = editingEmployee 
+      ? data?.filter(emp => emp.id !== editingEmployee.id) 
+      : data;
+
+    if (filteredData && filteredData.length > 0) {
+      setNameCheckStatus('duplicate');
+      setDuplicateEmployees(filteredData as Employee[]);
+    } else {
+      setNameCheckStatus('available');
+      setDuplicateEmployees([]);
+    }
+  }, [editingEmployee]);
+
+  // Debounce para verificação de nome
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formData.name) {
+        checkNameDuplicate(formData.name);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.name, checkNameDuplicate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,6 +219,8 @@ export default function Funcionarios() {
       name: '',
       company_id: '',
     });
+    setNameCheckStatus('idle');
+    setDuplicateEmployees([]);
   };
 
   const handleDialogClose = () => {
@@ -218,7 +267,38 @@ export default function Funcionarios() {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       required
+                      minLength={2}
+                      maxLength={100}
                     />
+                    
+                    {nameCheckStatus === 'checking' && (
+                      <p className="text-sm text-muted-foreground">Verificando...</p>
+                    )}
+                    
+                    {nameCheckStatus === 'available' && formData.name.length >= 2 && (
+                      <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        <AlertDescription className="text-green-700 dark:text-green-400">
+                          Nome disponível
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
+                    {nameCheckStatus === 'duplicate' && (
+                      <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+                        <AlertCircle className="h-4 w-4 text-amber-600" />
+                        <AlertDescription className="text-amber-700 dark:text-amber-400">
+                          <p className="font-semibold mb-1">Funcionário(s) com nome similar:</p>
+                          <ul className="list-disc list-inside space-y-1">
+                            {duplicateEmployees.map(emp => (
+                              <li key={emp.id} className="text-sm">
+                                {emp.name} - {emp.companies.name}
+                              </li>
+                            ))}
+                          </ul>
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="company">Empresa</Label>
