@@ -45,6 +45,34 @@ export default function Funcionarios() {
     company_id: '',
   });
 
+  // Gerar email automaticamente baseado no nome e empresa
+  useEffect(() => {
+    if (formData.name && formData.company_id && !editingEmployee) {
+      const company = companies.find(c => c.id === formData.company_id);
+      if (company) {
+        // Normalizar nome: remover acentos, converter para minúsculas
+        const normalizedName = formData.name
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, '.');
+        
+        // Normalizar nome da empresa
+        const normalizedCompany = company.name
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, '')
+          .replace(/[^a-z0-9]/g, '');
+        
+        const generatedEmail = `${normalizedName}@${normalizedCompany}.com.br`;
+        setFormData(prev => ({ ...prev, email: generatedEmail }));
+      }
+    }
+  }, [formData.name, formData.company_id, companies, editingEmployee]);
+
   useEffect(() => {
     fetchCompanies();
     fetchEmployees();
@@ -352,9 +380,12 @@ export default function Funcionarios() {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       maxLength={255}
+                      disabled={!editingEmployee}
                     />
                     <p className="text-xs text-muted-foreground">
-                      {editingEmployee ? 'Não será criado novo usuário ao editar' : 'Será criado um usuário com senha padrão: 123'}
+                      {editingEmployee 
+                        ? 'Não será criado novo usuário ao editar' 
+                        : 'Email gerado automaticamente. Senha padrão: 123'}
                     </p>
                   </div>
                   <div className="space-y-2">
