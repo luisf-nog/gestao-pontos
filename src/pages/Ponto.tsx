@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Search, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Download } from 'lucide-react';
 import { calculateWorkedHours, calculateDailyAndOvertimeValues } from '@/utils/timeCalculations';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -271,6 +271,50 @@ export default function Ponto() {
     resetForm();
   };
 
+  const exportToCSV = () => {
+    if (timeRecords.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Nenhum dado para exportar',
+        description: 'Não há registros de ponto para exportar.',
+      });
+      return;
+    }
+
+    const headers = ['Funcionário', 'Empresa', 'Data', 'Entrada', 'Saída', 'Horas', 'Diária', 'Extra', 'Total'];
+    const rows = timeRecords.map(record => [
+      record.employees.name,
+      record.employees.companies.name,
+      format(new Date(record.date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR }),
+      record.entry_time,
+      record.exit_time,
+      `${record.worked_hours.toFixed(2)}h`,
+      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(record.daily_value),
+      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(record.overtime_value),
+      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(record.total_value),
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `registros-ponto-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: 'Registros exportados!',
+      description: 'O arquivo CSV foi baixado com sucesso.',
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -280,14 +324,19 @@ export default function Ponto() {
             Registre e gerencie os horários dos funcionários
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Registro
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportToCSV} disabled={timeRecords.length === 0}>
+            <Download className="mr-2 h-4 w-4" />
+            Exportar CSV
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Registro
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingRecord ? 'Editar Registro' : 'Novo Registro de Ponto'}</DialogTitle>
               <DialogDescription>
@@ -359,6 +408,7 @@ export default function Ponto() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>

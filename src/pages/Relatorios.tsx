@@ -226,10 +226,10 @@ export default function Relatorios() {
       record.employee_name,
       record.company_name,
       record.total_records,
-      record.total_hours.toFixed(2),
-      record.total_daily.toFixed(2),
-      record.total_overtime.toFixed(2),
-      record.total_value.toFixed(2),
+      `${record.total_hours.toFixed(2)}h`,
+      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(record.total_daily),
+      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(record.total_overtime),
+      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(record.total_value),
     ]);
 
     const csvContent = [

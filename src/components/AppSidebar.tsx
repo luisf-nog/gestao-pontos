@@ -29,7 +29,9 @@ export function AppSidebar() {
   const { user, hasRole, signOut } = useAuth();
 
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted';
+    isActive 
+      ? 'bg-primary/10 text-primary font-bold border-l-4 border-primary' 
+      : 'hover:bg-muted border-l-4 border-transparent';
 
   const userInitials = user?.email?.substring(0, 2).toUpperCase() || 'U';
 
