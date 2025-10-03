@@ -82,15 +82,15 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       
-      <SidebarFooter className="p-4 border-t">
+      <SidebarFooter className="p-2 border-t">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-3 w-full hover:bg-accent rounded-md p-2 transition-colors">
+            <button className="flex items-center gap-3 w-full hover:bg-accent rounded-md p-2 transition-colors min-h-[44px]">
               <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback>{userInitials}</AvatarFallback>
+                <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
               </Avatar>
               {open && (
-                <div className="flex-1 min-w-0 text-left">
+                <div className="flex-1 min-w-0 text-left overflow-hidden">
                   <p className="text-sm font-medium truncate">{user?.email}</p>
                 </div>
               )}
