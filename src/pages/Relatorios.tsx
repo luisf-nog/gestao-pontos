@@ -228,10 +228,10 @@ export default function Relatorios() {
         record.employee_name,
         record.company_name,
         record.total_records,
-        record.total_hours.toFixed(2),
-        record.total_daily.toFixed(2),
-        record.total_overtime.toFixed(2),
-        record.total_value.toFixed(2),
+        record.total_hours.toFixed(2).replace('.', ','),
+        record.total_daily.toFixed(2).replace('.', ','),
+        record.total_overtime.toFixed(2).replace('.', ','),
+        record.total_value.toFixed(2).replace('.', ','),
       ])
     ];
 

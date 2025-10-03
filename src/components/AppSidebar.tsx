@@ -1,4 +1,5 @@
-import { Home, Users, Clock, Building2, BarChart3, Upload, LogOut, Fingerprint, Settings } from 'lucide-react';
+import { Home, Users, Clock, Building2, BarChart3, Upload, LogOut, Fingerprint, Settings, Moon, Sun } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -36,6 +37,7 @@ const menuItems = [
 export function AppSidebar() {
   const { open } = useSidebar();
   const { user, hasRole, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive 
@@ -97,6 +99,19 @@ export function AppSidebar() {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="cursor-pointer">
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="mr-2 h-4 w-4" />
+                  Modo Claro
+                </>
+              ) : (
+                <>
+                  <Moon className="mr-2 h-4 w-4" />
+                  Modo Escuro
+                </>
+              )}
+            </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <NavLink to="/settings" className="cursor-pointer">
                 <Settings className="mr-2 h-4 w-4" />

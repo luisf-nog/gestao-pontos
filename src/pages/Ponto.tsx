@@ -335,10 +335,10 @@ export default function Ponto() {
         format(new Date(record.date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR }),
         record.entry_time,
         record.exit_time,
-        record.worked_hours.toFixed(2),
-        record.daily_value.toFixed(2),
-        record.overtime_value.toFixed(2),
-        record.total_value.toFixed(2),
+        record.worked_hours.toFixed(2).replace('.', ','),
+        record.daily_value.toFixed(2).replace('.', ','),
+        record.overtime_value.toFixed(2).replace('.', ','),
+        record.total_value.toFixed(2).replace('.', ','),
       ])
     ];
 
