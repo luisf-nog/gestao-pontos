@@ -60,9 +60,16 @@ export function calculateDailyAndOvertimeValues(
 ): { dailyValue: number; overtimeValue: number; totalValue: number } {
   const standardHours = getStandardHoursForDay(date);
   
+  console.log('=== Cálculo de Valores ===');
+  console.log('Horas trabalhadas:', workedHours);
+  console.log('Horas padrão do dia:', standardHours);
+  console.log('Valor diária:', dailyRate);
+  console.log('Valor hora extra:', overtimeRate);
+  
   // Se não há carga horária padrão para o dia (domingo), não paga
   if (standardHours === 0) {
     const overtimeValue = workedHours * overtimeRate;
+    console.log('Domingo - Pagando só hora extra:', overtimeValue);
     return {
       dailyValue: 0,
       overtimeValue: overtimeValue,
@@ -74,6 +81,8 @@ export function calculateDailyAndOvertimeValues(
   if (workedHours < standardHours) {
     const hourlyRate = dailyRate / standardHours;
     const proportionalDaily = hourlyRate * workedHours;
+    console.log('Jornada não cumprida - Valor/hora:', hourlyRate);
+    console.log('Pagamento proporcional:', proportionalDaily);
     return {
       dailyValue: proportionalDaily,
       overtimeValue: 0,
@@ -84,6 +93,9 @@ export function calculateDailyAndOvertimeValues(
   // Se cumpriu a jornada, paga diária integral + horas extras
   const overtimeHours = workedHours - standardHours;
   const overtimeValue = overtimeHours * overtimeRate;
+  console.log('Jornada cumprida - Diária integral:', dailyRate);
+  console.log('Horas extras:', overtimeHours, '× R$', overtimeRate, '=', overtimeValue);
+  console.log('Total:', dailyRate + overtimeValue);
   
   return {
     dailyValue: dailyRate,
