@@ -4,6 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Button } from "@/components/ui/button";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AdminRoute } from "@/components/AdminRoute";
@@ -23,6 +26,7 @@ const queryClient = new QueryClient();
 
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, hasRole } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   if (isLoading) {
     return (
@@ -53,8 +57,20 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="h-14 border-b flex items-center px-4 bg-background">
+          <header className="h-14 border-b flex items-center justify-between px-4 bg-background">
             <SidebarTrigger />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="h-9 w-9"
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
+            </Button>
           </header>
           <main className="flex-1 p-6 overflow-auto">
             {children}
