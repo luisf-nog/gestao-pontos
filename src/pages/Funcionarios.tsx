@@ -560,10 +560,10 @@ export default function Funcionarios() {
         )}
       </div>
 
-      <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
+      <Card className="bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/10 dark:to-indigo-950/10 border-blue-100 dark:border-blue-900/30">
         <CardHeader>
-          <CardTitle className="text-blue-900 dark:text-blue-100">Lista de Funcionários</CardTitle>
-          <CardDescription className="text-blue-700 dark:text-blue-300">
+          <CardTitle className="text-blue-800 dark:text-blue-200">Lista de Funcionários</CardTitle>
+          <CardDescription className="text-blue-600 dark:text-blue-300">
             {employees.length} funcionário(s) cadastrado(s)
           </CardDescription>
         </CardHeader>

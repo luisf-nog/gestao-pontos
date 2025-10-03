@@ -360,77 +360,77 @@ export default function Relatorios() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800">
+        <Card className="bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-950/10 dark:to-emerald-950/10 border-green-100 dark:border-green-900/30">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-900 dark:text-green-100">
+            <CardTitle className="text-sm font-medium text-green-800 dark:text-green-200">
               Valor Total Gerado
             </CardTitle>
-            <div className="h-10 w-10 rounded-full bg-green-500/20 flex items-center justify-center">
-              <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <DollarSign className="h-5 w-5 text-green-600 dark:text-green-300" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-green-900 dark:text-green-100">
               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSummary.total)}
             </div>
-            <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+            <p className="text-xs text-green-600 dark:text-green-300 mt-1">
               Período: {format(parseLocalDate(startDate), 'dd/MM/yyyy', { locale: ptBR })} - {format(parseLocalDate(endDate), 'dd/MM/yyyy', { locale: ptBR })}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-800">
+        <Card className="bg-gradient-to-br from-blue-50/50 to-cyan-50/50 dark:from-blue-950/10 dark:to-cyan-950/10 border-blue-100 dark:border-blue-900/30">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-900 dark:text-blue-100">
+            <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
               Horas Trabalhadas
             </CardTitle>
-            <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-              <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <Clock className="h-5 w-5 text-blue-600 dark:text-blue-300" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
               {totalSummary.hours.toFixed(2)}h
             </div>
-            <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+            <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
               {totalSummary.records} registros de ponto
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 border-purple-200 dark:border-purple-800">
+        <Card className="bg-gradient-to-br from-purple-50/50 to-violet-50/50 dark:from-purple-950/10 dark:to-violet-950/10 border-purple-100 dark:border-purple-900/30">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-purple-900 dark:text-purple-100">
+            <CardTitle className="text-sm font-medium text-purple-800 dark:text-purple-200">
               Diárias Pagas
             </CardTitle>
-            <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-              <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+              <FileText className="h-5 w-5 text-purple-600 dark:text-purple-300" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-purple-900 dark:text-purple-100">
               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSummary.daily)}
             </div>
-            <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">
+            <p className="text-xs text-purple-600 dark:text-purple-300 mt-1">
               Valores de diárias integrais e proporcionais
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800">
+        <Card className="bg-gradient-to-br from-amber-50/50 to-orange-50/50 dark:from-amber-950/10 dark:to-orange-950/10 border-amber-100 dark:border-amber-900/30">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-amber-900 dark:text-amber-100">
+            <CardTitle className="text-sm font-medium text-amber-800 dark:text-amber-200">
               Horas Extras
             </CardTitle>
-            <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-amber-600 dark:text-amber-300" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-amber-900 dark:text-amber-100">
               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSummary.overtime)}
             </div>
-            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+            <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
               Valores de horas extras trabalhadas
             </p>
           </CardContent>
