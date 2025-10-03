@@ -58,6 +58,10 @@ export function AppSidebar() {
                 // Outras páginas admin: admin ou dev
                 if (item.adminOnly && !hasRole('admin') && !hasRole('dev')) return null;
                 
+                // Users comuns veem apenas Ponto Eletrônico
+                const isRegularUser = !hasRole('admin') && !hasRole('dev') && !hasRole('moderator');
+                if (isRegularUser && item.url !== '/ponto-eletronico') return null;
+                
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
