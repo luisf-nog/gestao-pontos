@@ -7,8 +7,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 
 interface Company {
@@ -23,8 +21,6 @@ export default function Empresas() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const { toast } = useToast();
-  const { hasRole } = useAuth();
-  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -33,12 +29,8 @@ export default function Empresas() {
   });
 
   useEffect(() => {
-    if (!hasRole('admin')) {
-      navigate('/dashboard');
-      return;
-    }
     fetchCompanies();
-  }, [hasRole, navigate]);
+  }, []);
 
   const fetchCompanies = async () => {
     const { data, error } = await supabase
@@ -160,10 +152,6 @@ export default function Empresas() {
     setEditingCompany(null);
     resetForm();
   };
-
-  if (!hasRole('admin')) {
-    return null;
-  }
 
   return (
     <div className="space-y-6">

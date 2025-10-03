@@ -92,8 +92,7 @@ export default function Ponto() {
       .from('time_records')
       .select('*, employees(name, companies(name))')
       .order('date', { ascending: false })
-      .order('entry_time', { ascending: false })
-      .limit(50);
+      .order('entry_time', { ascending: false });
 
     if (error) {
       toast({
@@ -101,9 +100,11 @@ export default function Ponto() {
         title: 'Erro ao carregar registros',
         description: error.message,
       });
+      console.error('Erro ao buscar registros:', error);
       return;
     }
 
+    console.log('Registros carregados:', data?.length || 0);
     setTimeRecords(data || []);
   };
 
