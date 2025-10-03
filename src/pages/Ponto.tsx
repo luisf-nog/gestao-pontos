@@ -450,9 +450,6 @@ export default function Ponto() {
                     <SelectContent>
                       <SelectItem value="LOGISTICA">LOGÍSTICA</SelectItem>
                       <SelectItem value="QUALIDADE">QUALIDADE</SelectItem>
-                      <SelectItem value="PRODUCAO">PRODUÇÃO</SelectItem>
-                      <SelectItem value="ADMINISTRATIVO">ADMINISTRATIVO</SelectItem>
-                      <SelectItem value="OUTROS">OUTROS</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
