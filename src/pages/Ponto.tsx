@@ -281,17 +281,17 @@ export default function Ponto() {
       return;
     }
 
-    const headers = ['Funcionário', 'Empresa', 'Data', 'Entrada', 'Saída', 'Horas', 'Diária', 'Extra', 'Total'];
+    const headers = ['Funcionario', 'Empresa', 'Data', 'Entrada', 'Saida', 'Horas', 'Diaria', 'Extra', 'Total'];
     const rows = timeRecords.map(record => [
       record.employees.name,
       record.employees.companies.name,
       format(new Date(record.date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR }),
       record.entry_time,
       record.exit_time,
-      `${record.worked_hours.toFixed(2)}h`,
-      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(record.daily_value),
-      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(record.overtime_value),
-      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(record.total_value),
+      record.worked_hours.toFixed(2).replace('.', ','),
+      record.daily_value.toFixed(2).replace('.', ','),
+      record.overtime_value.toFixed(2).replace('.', ','),
+      record.total_value.toFixed(2).replace('.', ','),
     ]);
 
     const csvContent = [

@@ -221,15 +221,15 @@ export default function Relatorios() {
       return;
     }
 
-    const headers = ['Funcionário', 'Empresa', 'Registros', 'Horas', 'Diárias', 'Extras', 'Total'];
+    const headers = ['Funcionario', 'Empresa', 'Registros', 'Horas', 'Diarias', 'Extras', 'Total'];
     const rows = reportData.map(record => [
       record.employee_name,
       record.company_name,
       record.total_records,
-      `${record.total_hours.toFixed(2)}h`,
-      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(record.total_daily),
-      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(record.total_overtime),
-      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(record.total_value),
+      record.total_hours.toFixed(2).replace('.', ','),
+      record.total_daily.toFixed(2).replace('.', ','),
+      record.total_overtime.toFixed(2).replace('.', ','),
+      record.total_value.toFixed(2).replace('.', ','),
     ]);
 
     const csvContent = [
