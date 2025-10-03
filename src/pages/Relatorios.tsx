@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Download, Calendar, DollarSign, Clock, FileText, TrendingUp } from 'lucide-react';
+import { Download, Calendar, DollarSign, Clock, FileText, TrendingUp, RefreshCw } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subWeeks, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { calculateDailyAndOvertimeValues } from '@/utils/timeCalculations';
@@ -273,10 +273,16 @@ export default function Relatorios() {
             Visualize e exporte relatórios detalhados
           </p>
         </div>
-        <Button onClick={exportToCSV} disabled={reportData.length === 0}>
-          <Download className="mr-2 h-4 w-4" />
-          Exportar CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={generateReport}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Atualizar
+          </Button>
+          <Button onClick={exportToCSV} disabled={reportData.length === 0}>
+            <Download className="mr-2 h-4 w-4" />
+            Exportar CSV
+          </Button>
+        </div>
       </div>
 
       <Card>

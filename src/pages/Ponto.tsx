@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Search, Pencil, Trash2, Download } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Download, RefreshCw } from 'lucide-react';
 import { calculateWorkedHours, calculateDailyAndOvertimeValues } from '@/utils/timeCalculations';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -370,6 +370,10 @@ export default function Ponto() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={fetchTimeRecords}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Atualizar
+          </Button>
           <Button variant="outline" onClick={exportToCSV} disabled={timeRecords.length === 0}>
             <Download className="mr-2 h-4 w-4" />
             Exportar CSV
