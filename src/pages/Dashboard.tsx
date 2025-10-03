@@ -96,13 +96,13 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-gradient-to-br from-blue-50/50 to-cyan-50/50 dark:from-blue-950/10 dark:to-cyan-950/10 border-blue-100 dark:border-blue-900/30">
+        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
+            <CardTitle className="text-sm font-medium text-blue-900 dark:text-blue-100">
               Total de Funcionários
             </CardTitle>
-            <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <Users className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+            <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             </div>
           </CardHeader>
           <CardContent>
@@ -110,13 +110,13 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-violet-50/50 to-purple-50/50 dark:from-violet-950/10 dark:to-purple-950/10 border-violet-100 dark:border-violet-900/30">
+        <Card className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20 border-violet-200 dark:border-violet-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-violet-800 dark:text-violet-200">
+            <CardTitle className="text-sm font-medium text-violet-900 dark:text-violet-100">
               Empresas Cadastradas
             </CardTitle>
-            <div className="h-8 w-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-              <Building2 className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+            <div className="h-8 w-8 rounded-full bg-violet-500/20 flex items-center justify-center">
+              <Building2 className="h-4 w-4 text-violet-600 dark:text-violet-400" />
             </div>
           </CardHeader>
           <CardContent>
@@ -124,13 +124,13 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-950/10 dark:to-yellow-950/10 border-amber-100 dark:border-amber-900/30">
+        <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 border-amber-200 dark:border-amber-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-amber-800 dark:text-amber-200">
+            <CardTitle className="text-sm font-medium text-amber-900 dark:text-amber-100">
               Registros do Mês
             </CardTitle>
-            <div className="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-              <Clock className="h-4 w-4 text-amber-600 dark:text-amber-300" />
+            <div className="h-8 w-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+              <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
             </div>
           </CardHeader>
           <CardContent>
@@ -138,13 +138,13 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-950/10 dark:to-emerald-950/10 border-green-100 dark:border-green-900/30">
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-800 dark:text-green-200">
+            <CardTitle className="text-sm font-medium text-green-900 dark:text-green-100">
               Total do Mês
             </CardTitle>
-            <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <DollarSign className="h-4 w-4 text-green-600 dark:text-green-300" />
+            <div className="h-8 w-8 rounded-full bg-green-500/20 flex items-center justify-center">
+              <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
             </div>
           </CardHeader>
           <CardContent>
@@ -156,66 +156,66 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="bg-gradient-to-br from-purple-50/50 to-violet-50/50 dark:from-purple-950/10 dark:to-violet-950/10 border-purple-100 dark:border-purple-900/30">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-purple-800 dark:text-purple-200">
-              <Calendar className="h-5 w-5 text-purple-600 dark:text-purple-300" />
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
               Resumo Mensal
             </CardTitle>
-            <CardDescription className="text-purple-600 dark:text-purple-300">{currentMonth}</CardDescription>
+            <CardDescription>{currentMonth}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-between items-center p-4 bg-white/50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-900/30">
-              <span className="text-sm font-medium text-purple-800 dark:text-purple-200">Valor Diárias</span>
-              <span className="text-lg font-bold text-green-700 dark:text-green-300">
+            <div className="flex justify-between items-center p-4 bg-muted/50 rounded-lg">
+              <span className="text-sm font-medium">Valor Diárias</span>
+              <span className="text-lg font-bold text-green-600">
                 R$ {monthlyDailyTotal.toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between items-center p-4 bg-white/50 dark:bg-purple-900/10 rounded-lg border border-purple-100 dark:border-purple-900/30">
-              <span className="text-sm font-medium text-purple-800 dark:text-purple-200">Valor Extras</span>
-              <span className="text-lg font-bold text-blue-700 dark:text-blue-300">
+            <div className="flex justify-between items-center p-4 bg-muted/50 rounded-lg">
+              <span className="text-sm font-medium">Valor Extras</span>
+              <span className="text-lg font-bold text-blue-600">
                 R$ {monthlyOvertimeTotal.toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between items-center p-4 bg-purple-100/50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800/40">
-              <span className="text-sm font-medium text-purple-800 dark:text-purple-200">Total Geral</span>
-              <span className="text-lg font-bold text-purple-800 dark:text-purple-200">
+            <div className="flex justify-between items-center p-4 bg-primary/10 rounded-lg">
+              <span className="text-sm font-medium">Total Geral</span>
+              <span className="text-lg font-bold text-primary">
                 R$ {stats.monthTotal.toFixed(2)}
               </span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-cyan-50/50 to-blue-50/50 dark:from-cyan-950/10 dark:to-blue-950/10 border-cyan-100 dark:border-cyan-900/30">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-cyan-800 dark:text-cyan-200">
-              <Clock className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
               Registros Recentes
             </CardTitle>
-            <CardDescription className="text-cyan-600 dark:text-cyan-300">
+            <CardDescription>
               Últimos 5 registros de ponto
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {recentRecords.length === 0 ? (
-                <p className="text-cyan-600 dark:text-cyan-300 text-sm">
+                <p className="text-muted-foreground text-sm">
                   Nenhum registro encontrado
                 </p>
               ) : (
                 recentRecords.map((record) => (
                   <div
                     key={record.id}
-                    className="flex items-center justify-between p-3 bg-white/50 dark:bg-cyan-900/10 rounded-lg border border-cyan-100 dark:border-cyan-900/30"
+                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                   >
                     <div>
-                      <p className="font-medium text-sm text-cyan-900 dark:text-cyan-100">{record.employees.name}</p>
-                      <p className="text-xs text-cyan-600 dark:text-cyan-300">
+                      <p className="font-medium text-sm">{record.employees.name}</p>
+                      <p className="text-xs text-muted-foreground">
                         {format(new Date(record.date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })} •{' '}
                         {record.entry_time} - {record.exit_time}
                       </p>
                     </div>
-                    <span className="font-semibold text-sm text-cyan-900 dark:text-cyan-100">
+                    <span className="font-semibold text-sm">
                       R$ {(record.total_value || 0).toFixed(2)}
                     </span>
                   </div>

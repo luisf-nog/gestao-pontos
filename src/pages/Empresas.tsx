@@ -234,10 +234,10 @@ export default function Empresas() {
         )}
       </div>
 
-      <Card className="bg-gradient-to-br from-violet-50/50 to-purple-50/50 dark:from-violet-950/10 dark:to-purple-950/10 border-violet-100 dark:border-violet-900/30">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-violet-800 dark:text-violet-200">Lista de Empresas</CardTitle>
-          <CardDescription className="text-violet-600 dark:text-violet-300">
+          <CardTitle>Lista de Empresas</CardTitle>
+          <CardDescription>
             {companies.length} empresa(s) cadastrada(s)
           </CardDescription>
         </CardHeader>
