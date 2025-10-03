@@ -156,66 +156,66 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 border-purple-200 dark:border-purple-800">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-purple-900 dark:text-purple-100">
+              <Calendar className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               Resumo Mensal
             </CardTitle>
-            <CardDescription>{currentMonth}</CardDescription>
+            <CardDescription className="text-purple-700 dark:text-purple-300">{currentMonth}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-between items-center p-4 bg-muted/50 rounded-lg">
-              <span className="text-sm font-medium">Valor Diárias</span>
-              <span className="text-lg font-bold text-green-600">
+            <div className="flex justify-between items-center p-4 bg-white/50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+              <span className="text-sm font-medium text-purple-900 dark:text-purple-100">Valor Diárias</span>
+              <span className="text-lg font-bold text-green-600 dark:text-green-400">
                 R$ {monthlyDailyTotal.toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between items-center p-4 bg-muted/50 rounded-lg">
-              <span className="text-sm font-medium">Valor Extras</span>
-              <span className="text-lg font-bold text-blue-600">
+            <div className="flex justify-between items-center p-4 bg-white/50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+              <span className="text-sm font-medium text-purple-900 dark:text-purple-100">Valor Extras</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
                 R$ {monthlyOvertimeTotal.toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between items-center p-4 bg-primary/10 rounded-lg">
-              <span className="text-sm font-medium">Total Geral</span>
-              <span className="text-lg font-bold text-primary">
+            <div className="flex justify-between items-center p-4 bg-purple-100 dark:bg-purple-900/40 rounded-lg border border-purple-300 dark:border-purple-700">
+              <span className="text-sm font-medium text-purple-900 dark:text-purple-100">Total Geral</span>
+              <span className="text-lg font-bold text-purple-700 dark:text-purple-300">
                 R$ {stats.monthTotal.toFixed(2)}
               </span>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/20 dark:to-blue-950/20 border-cyan-200 dark:border-cyan-800">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-cyan-900 dark:text-cyan-100">
+              <Clock className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
               Registros Recentes
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-cyan-700 dark:text-cyan-300">
               Últimos 5 registros de ponto
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {recentRecords.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
+                <p className="text-cyan-700 dark:text-cyan-300 text-sm">
                   Nenhum registro encontrado
                 </p>
               ) : (
                 recentRecords.map((record) => (
                   <div
                     key={record.id}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    className="flex items-center justify-between p-3 bg-white/50 dark:bg-cyan-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800"
                   >
                     <div>
-                      <p className="font-medium text-sm">{record.employees.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="font-medium text-sm text-cyan-900 dark:text-cyan-100">{record.employees.name}</p>
+                      <p className="text-xs text-cyan-700 dark:text-cyan-300">
                         {format(new Date(record.date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })} •{' '}
                         {record.entry_time} - {record.exit_time}
                       </p>
                     </div>
-                    <span className="font-semibold text-sm">
+                    <span className="font-semibold text-sm text-cyan-900 dark:text-cyan-100">
                       R$ {(record.total_value || 0).toFixed(2)}
                     </span>
                   </div>

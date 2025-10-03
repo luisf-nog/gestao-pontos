@@ -454,10 +454,10 @@ export default function Ponto() {
         </div>
       </div>
 
-      <Card>
+      <Card className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200 dark:border-orange-800">
         <CardHeader>
-          <CardTitle>Filtros de Busca</CardTitle>
-          <CardDescription>Filtre os registros por funcionário ou período</CardDescription>
+          <CardTitle className="text-orange-900 dark:text-orange-100">Filtros de Busca</CardTitle>
+          <CardDescription className="text-orange-700 dark:text-orange-300">Filtre os registros por funcionário ou período</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
@@ -529,10 +529,10 @@ export default function Ponto() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800">
         <CardHeader>
-          <CardTitle>Registros de Ponto</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-green-900 dark:text-green-100">Registros de Ponto</CardTitle>
+          <CardDescription className="text-green-700 dark:text-green-300">
             {filteredRecords.length} registro(s) encontrado(s)
           </CardDescription>
         </CardHeader>
