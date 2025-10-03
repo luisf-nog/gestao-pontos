@@ -407,8 +407,6 @@ export default function Funcionarios() {
     resetForm();
   };
 
-  const isAdmin = hasRole('admin') || hasRole('dev');
-
   const calculateAge = (birthDate: string | null): number | null => {
     if (!birthDate) return null;
     const today = new Date();
@@ -419,6 +417,9 @@ export default function Funcionarios() {
       age--;
     }
     return age;
+  };
+
+  const isAdmin = hasRole('admin') || hasRole('dev');
   };
 
   return (
