@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 
 interface Company {
@@ -21,6 +22,7 @@ export default function Empresas() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const { toast } = useToast();
+  const { hasRole } = useAuth();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -153,6 +155,8 @@ export default function Empresas() {
     resetForm();
   };
 
+  const isAdmin = hasRole('admin') || hasRole('dev');
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -162,13 +166,14 @@ export default function Empresas() {
             Gerencie as empresas terceirizadas e seus valores
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setIsDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Empresa
-            </Button>
-          </DialogTrigger>
+        {isAdmin && (
+          <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setIsDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Empresa
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
@@ -226,6 +231,7 @@ export default function Empresas() {
             </form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <Card>
@@ -242,13 +248,13 @@ export default function Empresas() {
                 <TableHead>Nome</TableHead>
                 <TableHead>Valor da Diária</TableHead>
                 <TableHead>Valor Hora Extra</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                {isAdmin && <TableHead className="text-right">Ações</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {companies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                  <TableCell colSpan={isAdmin ? 4 : 3} className="text-center text-muted-foreground">
                     Nenhuma empresa cadastrada
                   </TableCell>
                 </TableRow>
@@ -258,24 +264,26 @@ export default function Empresas() {
                     <TableCell className="font-medium">{company.name}</TableCell>
                     <TableCell>R$ {company.daily_rate.toFixed(2)}</TableCell>
                     <TableCell>R$ {company.overtime_rate.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(company)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(company.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {isAdmin && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(company)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(company.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}

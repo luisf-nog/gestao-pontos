@@ -204,7 +204,7 @@ export default function Funcionarios() {
         return;
       }
 
-      // Criar usuário se email foi fornecido
+      // Criar usuário automaticamente se email foi gerado
       if (formData.email && newEmployee) {
         try {
           const { data, error: functionError } = await supabase.functions.invoke('create-employee-user', {
@@ -224,7 +224,7 @@ export default function Funcionarios() {
           } else {
             toast({
               title: 'Funcionário cadastrado!',
-              description: `Usuário criado com email: ${formData.email} e senha padrão: 123`,
+              description: `Usuário criado automaticamente com email: ${formData.email} e senha padrão: 123`,
             });
           }
         } catch (err) {
@@ -423,7 +423,7 @@ export default function Funcionarios() {
                     <p className="text-xs text-muted-foreground">
                       {editingEmployee 
                         ? 'Não será criado novo usuário ao editar' 
-                        : 'Email gerado automaticamente. Senha padrão: 123'}
+                        : 'Email gerado automaticamente baseado no nome e empresa. Senha padrão: 123'}
                     </p>
                   </div>
                   <div className="space-y-2">
