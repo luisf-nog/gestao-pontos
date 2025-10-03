@@ -113,13 +113,13 @@ export type Database = {
           date: string
           employee_id: string
           entry_time: string
-          exit_time: string
+          exit_time: string | null
           id: string
           overtime_value: number | null
           setor: Database["public"]["Enums"]["setor_type"] | null
           total_value: number | null
           updated_at: string
-          worked_hours: number
+          worked_hours: number | null
         }
         Insert: {
           created_at?: string
@@ -127,13 +127,13 @@ export type Database = {
           date: string
           employee_id: string
           entry_time: string
-          exit_time: string
+          exit_time?: string | null
           id?: string
           overtime_value?: number | null
           setor?: Database["public"]["Enums"]["setor_type"] | null
           total_value?: number | null
           updated_at?: string
-          worked_hours: number
+          worked_hours?: number | null
         }
         Update: {
           created_at?: string
@@ -141,13 +141,13 @@ export type Database = {
           date?: string
           employee_id?: string
           entry_time?: string
-          exit_time?: string
+          exit_time?: string | null
           id?: string
           overtime_value?: number | null
           setor?: Database["public"]["Enums"]["setor_type"] | null
           total_value?: number | null
           updated_at?: string
-          worked_hours?: number
+          worked_hours?: number | null
         }
         Relationships: [
           {

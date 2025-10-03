@@ -2,15 +2,23 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Users, Building2, Clock, DollarSign, Calendar } from 'lucide-react';
+import { Users, Building2, Clock, DollarSign, Calendar, AlertCircle, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Badge } from '@/components/ui/badge';
 
 interface DashboardStats {
   totalEmployees: number;
   totalCompanies: number;
   monthRecords: number;
   monthTotal: number;
+  pendingExits: number;
+}
+
+interface SectorCost {
+  setor: string;
+  total: number;
+  count: number;
 }
 
 interface RecentRecord {
@@ -31,14 +39,17 @@ export default function Dashboard() {
     totalCompanies: 0,
     monthRecords: 0,
     monthTotal: 0,
+    pendingExits: 0,
   });
   const [recentRecords, setRecentRecords] = useState<RecentRecord[]>([]);
   const [monthlyDailyTotal, setMonthlyDailyTotal] = useState(0);
   const [monthlyOvertimeTotal, setMonthlyOvertimeTotal] = useState(0);
+  const [sectorCosts, setSectorCosts] = useState<SectorCost[]>([]);
   const currentMonth = format(new Date(), 'MMMM \'de\' yyyy', { locale: ptBR });
 
   useEffect(() => {
     fetchDashboardData();
+    fetchSectorCosts();
   }, []);
 
   const fetchDashboardData = async () => {
@@ -74,16 +85,49 @@ export default function Dashboard() {
       .order('entry_time', { ascending: false })
       .limit(5);
 
+    // Buscar registros sem saída (pendentes)
+    const { count: pendingCount } = await supabase
+      .from('time_records')
+      .select('*', { count: 'exact', head: true })
+      .is('exit_time', null);
+
     setStats({
       totalEmployees: employeesCount || 0,
       totalCompanies: companiesCount || 0,
       monthRecords: monthRecords?.length || 0,
       monthTotal: monthTotal,
+      pendingExits: pendingCount || 0,
     });
 
     setMonthlyDailyTotal(dailyTotal);
     setMonthlyOvertimeTotal(overtimeTotal);
     setRecentRecords(recent || []);
+  };
+
+  const fetchSectorCosts = async () => {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const { data } = await supabase
+      .from('time_records')
+      .select('setor, total_value')
+      .gte('date', format(startOfMonth, 'yyyy-MM-dd'))
+      .not('setor', 'is', null);
+
+    if (data) {
+      const costs = data.reduce((acc: any, record: any) => {
+        const sector = record.setor || 'OUTROS';
+        if (!acc[sector]) {
+          acc[sector] = { setor: sector, total: 0, count: 0 };
+        }
+        acc[sector].total += record.total_value || 0;
+        acc[sector].count += 1;
+        return acc;
+      }, {});
+
+      setSectorCosts(Object.values(costs));
+    }
   };
 
   return (
@@ -95,7 +139,7 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-blue-900 dark:text-blue-100">
@@ -153,9 +197,23 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 border-orange-200 dark:border-orange-800">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-orange-900 dark:text-orange-100">
+              Saídas Pendentes
+            </CardTitle>
+            <div className="h-8 w-8 rounded-full bg-orange-500/20 flex items-center justify-center">
+              <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-900 dark:text-orange-100">{stats.pendingExits}</div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -182,6 +240,42 @@ export default function Dashboard() {
               <span className="text-lg font-bold text-primary">
                 R$ {stats.monthTotal.toFixed(2)}
               </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Custos por Setor
+            </CardTitle>
+            <CardDescription>Distribuição mensal</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {sectorCosts.length === 0 ? (
+                <p className="text-muted-foreground text-sm">
+                  Nenhum dado disponível
+                </p>
+              ) : (
+                sectorCosts.map((sector) => (
+                  <div
+                    key={sector.setor}
+                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium text-sm">{sector.setor}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {sector.count} registro(s)
+                      </p>
+                    </div>
+                    <span className="font-semibold text-sm">
+                      R$ {sector.total.toFixed(2)}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

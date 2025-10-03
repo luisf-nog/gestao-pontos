@@ -30,15 +30,18 @@ interface TimeRecord {
   employee_id: string;
   date: string;
   entry_time: string;
-  exit_time: string;
-  worked_hours: number;
-  daily_value: number;
-  overtime_value: number;
-  total_value: number;
+  exit_time: string | null;
+  worked_hours: number | null;
+  daily_value: number | null;
+  overtime_value: number | null;
+  total_value: number | null;
+  setor: string | null;
   employees: {
     name: string;
     companies: {
       name: string;
+      daily_rate: number;
+      overtime_rate: number;
     };
   };
 }
@@ -59,7 +62,8 @@ export default function Ponto() {
     employee_id: '',
     date: format(new Date(), 'yyyy-MM-dd'),
     entry_time: '08:00',
-    exit_time: '17:00',
+    exit_time: '',
+    setor: '',
   });
 
   useEffect(() => {
@@ -148,6 +152,16 @@ export default function Ponto() {
 
     // Calcular valores dinamicamente com base nos valores atuais da empresa
     const recordsWithCalculatedValues = (data || []).map((record: any) => {
+      // Se não tem saída ainda, retorna valores zerados
+      if (!record.exit_time || !record.worked_hours) {
+        return {
+          ...record,
+          daily_value: 0,
+          overtime_value: 0,
+          total_value: 0,
+        };
+      }
+
       const [year, month, day] = record.date.split('-').map(Number);
       const recordDate = new Date(year, month - 1, day);
       
@@ -207,15 +221,19 @@ export default function Ponto() {
       return;
     }
 
-    const workedHours = calculateWorkedHours(formData.entry_time, formData.exit_time);
+    // Calcular horas apenas se tiver saída
+    const workedHours = formData.exit_time 
+      ? calculateWorkedHours(formData.entry_time, formData.exit_time)
+      : null;
 
     // Valores serão calculados dinamicamente ao exibir
-    const recordData = {
+    const recordData: any = {
       employee_id: formData.employee_id,
       date: formData.date,
       entry_time: formData.entry_time,
-      exit_time: formData.exit_time,
+      exit_time: formData.exit_time || null,
       worked_hours: workedHours,
+      setor: formData.setor || null,
       daily_value: null,
       overtime_value: null,
       total_value: null,
@@ -256,7 +274,7 @@ export default function Ponto() {
 
       toast({
         title: 'Ponto registrado!',
-        description: `Horas trabalhadas: ${workedHours.toFixed(2)}h`,
+        description: workedHours ? `Horas trabalhadas: ${workedHours.toFixed(2)}h` : 'Entrada registrada',
       });
     }
 
@@ -272,7 +290,8 @@ export default function Ponto() {
       employee_id: record.employee_id,
       date: record.date,
       entry_time: record.entry_time,
-      exit_time: record.exit_time,
+      exit_time: record.exit_time || '',
+      setor: record.setor || '',
     });
     setIsDialogOpen(true);
   };
@@ -307,7 +326,8 @@ export default function Ponto() {
       employee_id: '',
       date: format(new Date(), 'yyyy-MM-dd'),
       entry_time: '08:00',
-      exit_time: '17:00',
+      exit_time: '',
+      setor: '',
     });
   };
 
@@ -328,17 +348,18 @@ export default function Ponto() {
     }
 
     const worksheetData = [
-      ['Funcionário', 'Empresa', 'Data', 'Entrada', 'Saída', 'Horas', 'Diária', 'Extra', 'Total'],
+      ['Funcionário', 'Empresa', 'Data', 'Entrada', 'Saída', 'Setor', 'Horas', 'Diária', 'Extra', 'Total'],
       ...timeRecords.map(record => [
         record.employees.name,
         record.employees.companies.name,
         format(new Date(record.date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR }),
         record.entry_time,
-        record.exit_time,
-        record.worked_hours.toFixed(2).replace('.', ','),
-        record.daily_value.toFixed(2).replace('.', ','),
-        record.overtime_value.toFixed(2).replace('.', ','),
-        record.total_value.toFixed(2).replace('.', ','),
+        record.exit_time || 'Pendente',
+        record.setor || '-',
+        record.worked_hours?.toFixed(2).replace('.', ',') || '0,00',
+        record.daily_value?.toFixed(2).replace('.', ',') || '0,00',
+        record.overtime_value?.toFixed(2).replace('.', ',') || '0,00',
+        record.total_value?.toFixed(2).replace('.', ',') || '0,00',
       ])
     ];
 
@@ -417,6 +438,24 @@ export default function Ponto() {
                     required
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="setor">Setor</Label>
+                  <Select
+                    value={formData.setor}
+                    onValueChange={(value) => setFormData({ ...formData, setor: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o setor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LOGISTICA">LOGÍSTICA</SelectItem>
+                      <SelectItem value="QUALIDADE">QUALIDADE</SelectItem>
+                      <SelectItem value="PRODUCAO">PRODUÇÃO</SelectItem>
+                      <SelectItem value="ADMINISTRATIVO">ADMINISTRATIVO</SelectItem>
+                      <SelectItem value="OUTROS">OUTROS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="entry_time">Entrada</Label>
@@ -429,14 +468,14 @@ export default function Ponto() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="exit_time">Saída</Label>
+                    <Label htmlFor="exit_time">Saída (opcional)</Label>
                     <Input
                       id="exit_time"
                       type="time"
                       value={formData.exit_time}
                       onChange={(e) => setFormData({ ...formData, exit_time: e.target.value })}
-                      required
                     />
+                    <p className="text-xs text-muted-foreground">Deixe em branco se ainda não saiu</p>
                   </div>
                 </div>
               </div>
@@ -544,6 +583,7 @@ export default function Ponto() {
                 <TableHead>Data</TableHead>
                 <TableHead>Entrada</TableHead>
                 <TableHead>Saída</TableHead>
+                <TableHead>Setor</TableHead>
                 <TableHead>Horas</TableHead>
                 <TableHead>Diária</TableHead>
                 <TableHead>Extra</TableHead>
@@ -554,7 +594,7 @@ export default function Ponto() {
             <TableBody>
               {filteredRecords.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground">
                     Nenhum registro encontrado
                   </TableCell>
                 </TableRow>
@@ -571,16 +611,25 @@ export default function Ponto() {
                       {format(new Date(record.date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
                     </TableCell>
                     <TableCell>{record.entry_time}</TableCell>
-                    <TableCell>{record.exit_time}</TableCell>
-                    <TableCell>{record.worked_hours.toFixed(2)}h</TableCell>
+                    <TableCell>
+                      {record.exit_time || <span className="text-amber-600">Pendente</span>}
+                    </TableCell>
+                    <TableCell>
+                      {record.setor ? (
+                        <span className="text-xs font-medium">{record.setor}</span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{record.worked_hours?.toFixed(2) || '0.00'}h</TableCell>
                     <TableCell className="text-green-600">
-                      R$ {record.daily_value.toFixed(2)}
+                      R$ {record.daily_value?.toFixed(2) || '0.00'}
                     </TableCell>
                     <TableCell className="text-blue-600">
-                      R$ {record.overtime_value.toFixed(2)}
+                      R$ {record.overtime_value?.toFixed(2) || '0.00'}
                     </TableCell>
                     <TableCell className="font-semibold">
-                      R$ {record.total_value.toFixed(2)}
+                      R$ {record.total_value?.toFixed(2) || '0.00'}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

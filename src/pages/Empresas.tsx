@@ -167,9 +167,9 @@ export default function Empresas() {
           </p>
         </div>
         {isAdmin && (
-          <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => setIsDialogOpen(true)}>
+              <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 Nova Empresa
               </Button>
