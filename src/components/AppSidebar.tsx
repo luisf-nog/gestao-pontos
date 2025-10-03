@@ -1,4 +1,4 @@
-import { Home, Users, Clock, Building2, BarChart3, LogOut } from 'lucide-react';
+import { Home, Users, Clock, Building2, BarChart3, Upload, LogOut } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -21,6 +21,7 @@ const menuItems = [
   { title: 'Relatórios', url: '/relatorios', icon: BarChart3 },
   { title: 'Funcionários', url: '/funcionarios', icon: Users },
   { title: 'Empresas', url: '/empresas', icon: Building2, adminOnly: true },
+  { title: 'Importar Dados', url: '/importar', icon: Upload, adminOnly: true },
 ];
 
 export function AppSidebar() {

@@ -13,6 +13,7 @@ import Ponto from "./pages/Ponto";
 import Funcionarios from "./pages/Funcionarios";
 import Empresas from "./pages/Empresas";
 import Relatorios from "./pages/Relatorios";
+import ImportarDados from "./pages/ImportarDados";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -65,6 +66,7 @@ const App = () => (
             <Route path="/funcionarios" element={<ProtectedLayout><Funcionarios /></ProtectedLayout>} />
             <Route path="/empresas" element={<ProtectedLayout><Empresas /></ProtectedLayout>} />
             <Route path="/relatorios" element={<ProtectedLayout><Relatorios /></ProtectedLayout>} />
+            <Route path="/importar" element={<ProtectedLayout><ImportarDados /></ProtectedLayout>} />
             <Route path="/settings" element={<ProtectedLayout><Settings /></ProtectedLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

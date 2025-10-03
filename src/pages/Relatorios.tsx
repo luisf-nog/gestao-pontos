@@ -235,12 +235,11 @@ export default function Relatorios() {
             </div>
             <div className="space-y-2">
               <Label>Empresa</Label>
-              <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+              <Select value={selectedCompany || undefined} onValueChange={(value) => setSelectedCompany(value || '')}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todas as empresas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as empresas</SelectItem>
                   {companies.map((company) => (
                     <SelectItem key={company.id} value={company.id}>
                       {company.name}
@@ -251,12 +250,11 @@ export default function Relatorios() {
             </div>
             <div className="space-y-2">
               <Label>Funcionário</Label>
-              <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+              <Select value={selectedEmployee || undefined} onValueChange={(value) => setSelectedEmployee(value || '')}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos os funcionários" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os funcionários</SelectItem>
                   {employees.map((employee) => (
                     <SelectItem key={employee.id} value={employee.id}>
                       {employee.name}
