@@ -16,6 +16,7 @@ import { ptBR } from 'date-fns/locale';
 interface Employee {
   id: string;
   name: string;
+  is_active: boolean;
   companies: {
     name: string;
   };
@@ -51,7 +52,7 @@ export default function PontoEletronico() {
 
     const { data, error } = await supabase
       .from('employees')
-      .select('id, name, companies(name)')
+      .select('id, name, is_active, companies(name)')
       .eq('user_id', user.id)
       .single();
 
@@ -61,6 +62,16 @@ export default function PontoEletronico() {
         variant: 'destructive',
         title: 'Erro',
         description: 'Não foi possível carregar seus dados.',
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    if (!data.is_active) {
+      toast({
+        variant: 'destructive',
+        title: 'Acesso bloqueado',
+        description: 'Seu acesso ao sistema de ponto foi desativado. Entre em contato com o administrador.',
       });
       setIsLoading(false);
       return;
@@ -101,6 +112,22 @@ export default function PontoEletronico() {
   const handleEntry = async () => {
     if (!employee || !selectedSetor) return;
 
+    // Verificar novamente se funcionário está ativo antes de registrar ponto
+    const { data: activeCheck, error: checkError } = await supabase
+      .from('employees')
+      .select('is_active')
+      .eq('id', employee.id)
+      .single();
+
+    if (checkError || !activeCheck || !activeCheck.is_active) {
+      toast({
+        variant: 'destructive',
+        title: 'Acesso bloqueado',
+        description: 'Seu acesso foi desativado. Entre em contato com o administrador.',
+      });
+      return;
+    }
+
     const now = new Date();
     const today = format(now, 'yyyy-MM-dd');
     const time = format(now, 'HH:mm');
@@ -136,6 +163,22 @@ export default function PontoEletronico() {
 
   const handleExit = async () => {
     if (!employee || !todayRecord) return;
+
+    // Verificar novamente se funcionário está ativo antes de registrar saída
+    const { data: activeCheck, error: checkError } = await supabase
+      .from('employees')
+      .select('is_active')
+      .eq('id', employee.id)
+      .single();
+
+    if (checkError || !activeCheck || !activeCheck.is_active) {
+      toast({
+        variant: 'destructive',
+        title: 'Acesso bloqueado',
+        description: 'Seu acesso foi desativado. Entre em contato com o administrador.',
+      });
+      return;
+    }
 
     const now = new Date();
     const time = format(now, 'HH:mm');

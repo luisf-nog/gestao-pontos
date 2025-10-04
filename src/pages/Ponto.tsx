@@ -119,6 +119,7 @@ export default function Ponto() {
     const { data, error } = await supabase
       .from('employees')
       .select('*, companies(name, daily_rate, overtime_rate)')
+      .eq('is_active', true)  // Apenas funcionários ativos
       .order('name');
 
     if (error) {
@@ -216,7 +217,23 @@ export default function Ponto() {
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: 'Selecione um funcionário',
+        description: 'Funcionário não encontrado ou inativo',
+      });
+      return;
+    }
+
+    // Verificar se o funcionário ainda está ativo
+    const { data: employeeCheck, error: checkError } = await supabase
+      .from('employees')
+      .select('is_active')
+      .eq('id', formData.employee_id)
+      .single();
+
+    if (checkError || !employeeCheck || !employeeCheck.is_active) {
+      toast({
+        variant: 'destructive',
+        title: 'Acesso negado',
+        description: 'Este funcionário foi desativado e não pode mais bater ponto.',
       });
       return;
     }
