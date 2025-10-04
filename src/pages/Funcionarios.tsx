@@ -129,6 +129,7 @@ export default function Funcionarios() {
       return;
     }
 
+    console.log('Funcionários carregados:', data);
     setEmployees(data || []);
   };
 
@@ -247,19 +248,25 @@ export default function Funcionarios() {
         if (uploadedUrl) photoUrl = uploadedUrl;
       }
 
+      console.log('Atualizando funcionário com is_active:', formData.is_active);
+      
+      const updateData = {
+        name: formData.name,
+        email: formData.email,
+        personal_email: formData.personal_email || null,
+        company_id: formData.company_id,
+        photo_url: photoUrl,
+        birth_date: formData.birth_date || null,
+        phone: formData.phone || null,
+        notes: formData.notes || null,
+        is_active: formData.is_active,
+      };
+
+      console.log('Dados de atualização:', updateData);
+
       const { error } = await supabase
         .from('employees')
-        .update({
-          name: formData.name,
-          email: formData.email,
-          personal_email: formData.personal_email || null,
-          company_id: formData.company_id,
-          photo_url: photoUrl,
-          birth_date: formData.birth_date || null,
-          phone: formData.phone || null,
-          notes: formData.notes || null,
-          is_active: formData.is_active,
-        })
+        .update(updateData)
         .eq('id', editingEmployee.id);
 
       if (error) {
@@ -357,6 +364,9 @@ export default function Funcionarios() {
   };
 
   const handleEdit = (employee: Employee) => {
+    console.log('Editando funcionário:', employee);
+    console.log('is_active do funcionário:', employee.is_active);
+    
     setEditingEmployee(employee);
     setFormData({
       name: employee.name,
