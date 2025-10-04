@@ -48,6 +48,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          is_active: boolean
           name: string
           notes: string | null
           personal_email: string | null
@@ -62,6 +63,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          is_active?: boolean
           name: string
           notes?: string | null
           personal_email?: string | null
@@ -76,6 +78,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          is_active?: boolean
           name?: string
           notes?: string | null
           personal_email?: string | null

@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -90,6 +90,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           description: error.message,
           variant: 'destructive',
         });
+      }
+      return { error };
+    }
+
+    // Verificar se o funcionário está ativo
+    if (data.user) {
+      const { data: employee, error: employeeError } = await supabase
+        .from('employees')
+        .select('is_active')
+        .eq('user_id', data.user.id)
+        .maybeSingle();
+
+      if (!employeeError && employee && !employee.is_active) {
+        await supabase.auth.signOut();
+        toast({
+          title: 'Acesso bloqueado',
+          description: 'Seu acesso ao sistema foi desativado. Entre em contato com o administrador.',
+          variant: 'destructive',
+        });
+        return { error: { message: 'Acesso bloqueado' } };
       }
     }
 

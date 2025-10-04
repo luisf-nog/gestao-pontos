@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,6 +32,7 @@ interface Employee {
   birth_date: string | null;
   phone: string | null;
   notes: string | null;
+  is_active: boolean;
   companies: {
     name: string;
   };
@@ -57,6 +59,7 @@ export default function Funcionarios() {
     birth_date: '',
     phone: '',
     notes: '',
+    is_active: true,
   });
 
   // Gerar email automaticamente baseado no nome e empresa
@@ -254,6 +257,7 @@ export default function Funcionarios() {
           birth_date: formData.birth_date || null,
           phone: formData.phone || null,
           notes: formData.notes || null,
+          is_active: formData.is_active,
         })
         .eq('id', editingEmployee.id);
 
@@ -281,6 +285,7 @@ export default function Funcionarios() {
           birth_date: formData.birth_date || null,
           phone: formData.phone || null,
           notes: formData.notes || null,
+          is_active: formData.is_active,
         }])
         .select()
         .single();
@@ -360,6 +365,7 @@ export default function Funcionarios() {
       birth_date: employee.birth_date || '',
       phone: employee.phone || '',
       notes: employee.notes || '',
+      is_active: employee.is_active,
     });
     setPhotoPreview(employee.photo_url);
     setPhotoFile(null);
@@ -400,6 +406,7 @@ export default function Funcionarios() {
       birth_date: '',
       phone: '',
       notes: '',
+      is_active: true,
     });
     setNameCheckStatus('idle');
     setDuplicateEmployees([]);
@@ -560,14 +567,33 @@ export default function Funcionarios() {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       maxLength={255}
-                      disabled={!editingEmployee}
+                      disabled={!!editingEmployee}
+                      className={editingEmployee ? "cursor-not-allowed opacity-70" : ""}
                     />
+                    {editingEmployee ? (
+                      <p className="text-xs text-muted-foreground">
+                        O e-mail não pode ser alterado após o cadastro
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Email gerado automaticamente baseado no nome e empresa. Senha padrão: 123
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Switch
+                        id="is_active"
+                        checked={formData.is_active}
+                        onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                      />
+                      <span>Funcionário Ativo</span>
+                    </Label>
                     <p className="text-xs text-muted-foreground">
-                      {editingEmployee 
-                        ? 'Não será criado novo usuário ao editar' 
-                        : 'Email gerado automaticamente baseado no nome e empresa. Senha padrão: 123'}
+                      Desative para bloquear o acesso do funcionário ao sistema de ponto
                     </p>
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="personal_email">Email Pessoal (opcional)</Label>
                     <Input
@@ -728,8 +754,8 @@ export default function Funcionarios() {
                     <TableCell>{employee.personal_email || '-'}</TableCell>
                     <TableCell>{employee.companies.name}</TableCell>
                     <TableCell>
-                      <Badge variant={employee.user_id ? 'default' : 'secondary'}>
-                        {employee.user_id ? 'Ativo' : 'Inativo'}
+                      <Badge variant={employee.user_id && employee.is_active ? 'default' : 'secondary'}>
+                        {employee.user_id && employee.is_active ? 'Ativo' : 'Inativo'}
                       </Badge>
                     </TableCell>
                     {isAdmin && (
