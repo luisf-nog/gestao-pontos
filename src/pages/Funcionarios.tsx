@@ -437,9 +437,14 @@ export default function Funcionarios() {
           </p>
         </div>
         {isAdmin && (
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+              handleDialogClose();
+            }
+          }}>
             <DialogTrigger asChild>
-              <Button>
+              <Button onClick={resetForm}>
                 <Plus className="mr-2 h-4 w-4" />
                 Novo Funcionário
               </Button>
