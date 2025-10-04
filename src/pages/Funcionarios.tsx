@@ -456,7 +456,7 @@ export default function Funcionarios() {
                 Novo Funcionário
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
               <DialogHeader>
                 <DialogTitle>
                   {editingEmployee ? 'Editar Funcionário' : 'Novo Funcionário'}
@@ -465,8 +465,9 @@ export default function Funcionarios() {
                   Preencha os dados do funcionário
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleSubmit}>
-                <div className="space-y-4 py-4">
+              <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+                <div className="overflow-y-auto flex-1 px-1">
+                  <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label>Foto</Label>
                     <div className="flex items-center gap-4">
@@ -670,9 +671,10 @@ export default function Funcionarios() {
                     <p className="text-xs text-muted-foreground">
                       {formData.notes.length}/500 caracteres
                     </p>
+                    </div>
                   </div>
                 </div>
-                <DialogFooter>
+                <DialogFooter className="mt-4">
                   <Button type="button" variant="outline" onClick={handleDialogClose}>
                     Cancelar
                   </Button>
