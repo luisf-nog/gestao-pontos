@@ -269,6 +269,8 @@ export default function Funcionarios() {
         .update(updateData)
         .eq('id', editingEmployee.id);
 
+      console.log('Resultado da atualização - erro:', error);
+
       if (error) {
         toast({
           variant: 'destructive',
@@ -610,7 +612,11 @@ export default function Funcionarios() {
                       <Switch
                         id="is_active"
                         checked={formData.is_active}
-                        onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                        onCheckedChange={(checked) => {
+                          console.log('Switch alterado para:', checked);
+                          setFormData({ ...formData, is_active: checked });
+                          console.log('FormData atualizado, is_active agora é:', checked);
+                        }}
                       />
                       <span>Funcionário Ativo</span>
                     </Label>
