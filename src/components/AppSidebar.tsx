@@ -39,8 +39,8 @@ export function AppSidebar() {
 
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive 
-      ? 'bg-blue-100 text-blue-700 font-semibold dark:bg-blue-900/50 dark:text-white dark:border-l-4 dark:border-blue-400' 
-      : 'text-foreground hover:bg-accent hover:text-accent-foreground dark:text-gray-300';
+      ? 'bg-blue-100 text-blue-700 font-semibold dark:bg-blue-900/50 dark:text-white dark:border-l-4 dark:border-blue-400 dark:shadow-lg dark:shadow-blue-500/20' 
+      : 'text-foreground hover:bg-accent hover:text-accent-foreground dark:text-white dark:hover:text-white';
 
   const userInitials = user?.email?.substring(0, 2).toUpperCase() || 'U';
 
