@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Pencil, Trash2, AlertCircle, CheckCircle2, Upload, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertCircle, CheckCircle2, Upload, X, Search } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface Company {
@@ -48,6 +48,7 @@ export default function Funcionarios() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   const { hasRole } = useAuth();
 
@@ -433,10 +434,16 @@ export default function Funcionarios() {
   };
 
   const isAdmin = hasRole('admin') || hasRole('dev');
+  const isDev = hasRole('dev');
+
+  // Filtrar funcionários pela busca
+  const filteredEmployees = employees.filter(employee =>
+    employee.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Funcionários</h1>
           <p className="text-muted-foreground">
@@ -528,7 +535,14 @@ export default function Funcionarios() {
                       required
                       minLength={2}
                       maxLength={100}
+                      disabled={!!editingEmployee && !isDev}
+                      className={editingEmployee && !isDev ? "cursor-not-allowed opacity-70" : ""}
                     />
+                    {editingEmployee && !isDev && (
+                      <p className="text-xs text-muted-foreground">
+                        O nome não pode ser alterado após o cadastro (apenas desenvolvedores)
+                      </p>
+                    )}
                     
                     {nameCheckStatus === 'checking' && (
                       <p className="text-sm text-muted-foreground">Verificando...</p>
@@ -690,10 +704,24 @@ export default function Funcionarios() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Funcionários</CardTitle>
-          <CardDescription>
-            {employees.length} funcionário(s) cadastrado(s)
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle>Lista de Funcionários</CardTitle>
+              <CardDescription>
+                {filteredEmployees.length} de {employees.length} funcionário(s)
+              </CardDescription>
+            </div>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Buscar por nome..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -711,14 +739,14 @@ export default function Funcionarios() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.length === 0 ? (
+              {filteredEmployees.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={isAdmin ? 9 : 8} className="text-center text-muted-foreground">
-                    Nenhum funcionário cadastrado
+                    {searchTerm ? 'Nenhum funcionário encontrado com esse nome' : 'Nenhum funcionário cadastrado'}
                   </TableCell>
                 </TableRow>
               ) : (
-                employees.map((employee) => (
+                filteredEmployees.map((employee) => (
                   <TableRow key={employee.id}>
                     <TableCell>
                       <Avatar className="h-8 w-8">
