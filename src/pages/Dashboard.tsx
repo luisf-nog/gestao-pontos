@@ -45,7 +45,9 @@ export default function Dashboard() {
   const [monthlyDailyTotal, setMonthlyDailyTotal] = useState(0);
   const [monthlyOvertimeTotal, setMonthlyOvertimeTotal] = useState(0);
   const [sectorCosts, setSectorCosts] = useState<SectorCost[]>([]);
+  const [prevMonthTotal, setPrevMonthTotal] = useState(0);
   const currentMonth = format(new Date(), 'MMMM \'de\' yyyy', { locale: ptBR });
+  const previousMonth = format(new Date(new Date().setMonth(new Date().getMonth() - 1)), 'MMMM \'de\' yyyy', { locale: ptBR });
 
   useEffect(() => {
     fetchDashboardData();
@@ -64,18 +66,31 @@ export default function Dashboard() {
       .select('*', { count: 'exact', head: true });
 
     // Buscar registros do mês atual
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     
     const { data: monthRecords } = await supabase
       .from('time_records')
       .select('id, total_value, daily_value, overtime_value')
-      .gte('date', format(startOfMonth, 'yyyy-MM-dd'));
+      .gte('date', format(startOfMonth, 'yyyy-MM-dd'))
+      .lte('date', format(endOfMonth, 'yyyy-MM-dd'));
 
     const monthTotal = monthRecords?.reduce((sum, record) => sum + (record.total_value || 0), 0) || 0;
     const dailyTotal = monthRecords?.reduce((sum, record) => sum + (record.daily_value || 0), 0) || 0;
     const overtimeTotal = monthRecords?.reduce((sum, record) => sum + (record.overtime_value || 0), 0) || 0;
+
+    // Buscar registros do mês anterior
+    const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    
+    const { data: prevMonthRecords } = await supabase
+      .from('time_records')
+      .select('total_value')
+      .gte('date', format(startOfPrevMonth, 'yyyy-MM-dd'))
+      .lte('date', format(endOfPrevMonth, 'yyyy-MM-dd'));
+
+    const prevTotal = prevMonthRecords?.reduce((sum, record) => sum + (record.total_value || 0), 0) || 0;
 
     // Buscar registros recentes
     const { data: recent } = await supabase
@@ -101,18 +116,20 @@ export default function Dashboard() {
 
     setMonthlyDailyTotal(dailyTotal);
     setMonthlyOvertimeTotal(overtimeTotal);
+    setPrevMonthTotal(prevTotal);
     setRecentRecords(recent || []);
   };
 
   const fetchSectorCosts = async () => {
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
     const { data } = await supabase
       .from('time_records')
       .select('setor, total_value')
       .gte('date', format(startOfMonth, 'yyyy-MM-dd'))
+      .lte('date', format(endOfMonth, 'yyyy-MM-dd'))
       .not('setor', 'is', null);
 
     if (data) {
@@ -236,10 +253,14 @@ export default function Dashboard() {
               </span>
             </div>
             <div className="flex justify-between items-center p-4 bg-primary/5 rounded-lg border border-primary/20">
-              <span className="text-sm font-medium">Total Geral</span>
-              <span className="text-lg font-bold">
-                R$ {stats.monthTotal.toFixed(2)}
-              </span>
+              <div>
+                <p className="text-sm font-medium">{currentMonth}</p>
+                <p className="text-lg font-bold">R$ {stats.monthTotal.toFixed(2)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">{previousMonth}</p>
+                <p className="text-sm font-semibold">R$ {prevMonthTotal.toFixed(2)}</p>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -5,11 +5,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { LogIn, LogOut, Clock, Key, Calendar } from 'lucide-react';
+import { LogIn, LogOut, Clock, Key, Calendar, QrCode, MapPin, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -17,6 +18,7 @@ interface Employee {
   id: string;
   name: string;
   is_active: boolean;
+  company_id: string;
   companies: {
     name: string;
   };
@@ -28,14 +30,28 @@ interface TodayRecord {
   exit_time: string | null;
 }
 
+interface QRSettings {
+  qr_enabled: boolean;
+  geo_enabled: boolean;
+  qr_code_token: string;
+  latitude: number | null;
+  longitude: number | null;
+  radius_meters: number;
+}
+
 export default function PontoEletronico() {
   const { user } = useAuth();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [todayRecord, setTodayRecord] = useState<TodayRecord | null>(null);
+  const [qrSettings, setQrSettings] = useState<QRSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [selectedSetor, setSelectedSetor] = useState<string>('');
+  const [scannedQR, setScannedQR] = useState<string>('');
+  const [showQRInput, setShowQRInput] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const { toast } = useToast();
   const currentDate = format(new Date(), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
   const currentTime = format(new Date(), 'HH:mm');
@@ -47,12 +63,125 @@ export default function PontoEletronico() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (employee) {
+      fetchQRSettings();
+      requestLocation();
+    }
+  }, [employee]);
+
+  const requestLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error('Erro ao obter localização:', error);
+        }
+      );
+    }
+  };
+
+  const fetchQRSettings = async () => {
+    if (!employee) return;
+
+    const { data } = await supabase
+      .from('company_qr_settings')
+      .select('*')
+      .eq('company_id', employee.company_id)
+      .maybeSingle();
+
+    if (data) {
+      setQrSettings(data);
+    }
+  };
+
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371e3; // Raio da Terra em metros
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) *
+      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distância em metros
+  };
+
+  const validatePoint = async (): Promise<{ valid: boolean; errors: string[] }> => {
+    const errors: string[] = [];
+
+    if (!qrSettings) {
+      errors.push('Configurações de validação não encontradas');
+      return { valid: false, errors };
+    }
+
+    // Validar QR Code
+    if (qrSettings.qr_enabled) {
+      if (!scannedQR) {
+        errors.push('QR Code não escaneado');
+      } else if (scannedQR !== qrSettings.qr_code_token) {
+        errors.push('QR Code inválido');
+        await logValidation('qr_code', 'invalid_qr', scannedQR);
+      }
+    }
+
+    // Validar Geolocalização
+    if (qrSettings.geo_enabled) {
+      if (!userLocation) {
+        errors.push('Localização não obtida. Ative o GPS do dispositivo');
+        await logValidation('geolocation', 'gps_disabled', null);
+      } else if (qrSettings.latitude && qrSettings.longitude) {
+        const distance = calculateDistance(
+          userLocation.latitude,
+          userLocation.longitude,
+          qrSettings.latitude,
+          qrSettings.longitude
+        );
+
+        if (distance > qrSettings.radius_meters) {
+          errors.push(`Você está fora da área permitida (${Math.round(distance)}m de distância)`);
+          await logValidation('geolocation', 'out_of_area', null, distance);
+        }
+      }
+    }
+
+    setValidationErrors(errors);
+    return { valid: errors.length === 0, errors };
+  };
+
+  const logValidation = async (
+    type: string,
+    status: string,
+    qrCode: string | null,
+    distance?: number
+  ) => {
+    if (!employee) return;
+
+    await supabase.from('point_validation_logs').insert([{
+      employee_id: employee.id,
+      validation_type: type,
+      validation_status: status,
+      qr_code_provided: qrCode,
+      latitude: userLocation?.latitude,
+      longitude: userLocation?.longitude,
+      distance_meters: distance,
+    }]);
+  };
+
   const fetchEmployeeData = async () => {
     if (!user) return;
 
     const { data, error } = await supabase
       .from('employees')
-      .select('id, name, is_active, companies(name)')
+      .select('id, name, is_active, company_id, companies(name)')
       .eq('user_id', user.id)
       .single();
 
@@ -111,6 +240,17 @@ export default function PontoEletronico() {
 
   const handleEntry = async () => {
     if (!employee || !selectedSetor) return;
+
+    // Validar QR e Geo
+    const { valid, errors } = await validatePoint();
+    if (!valid) {
+      toast({
+        variant: 'destructive',
+        title: 'Validação Falhou',
+        description: errors.join('. '),
+      });
+      return;
+    }
 
     // Verificar novamente se funcionário está ativo antes de registrar ponto
     const { data: activeCheck, error: checkError } = await supabase
@@ -309,6 +449,71 @@ export default function PontoEletronico() {
               <p className="text-muted-foreground mb-4">Você ainda não registrou entrada hoje</p>
               
               <div className="space-y-4 max-w-md mx-auto">
+                {/* Validações necessárias */}
+                {qrSettings && (qrSettings.qr_enabled || qrSettings.geo_enabled) && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-sm">
+                      Para registrar ponto você precisa:
+                      {qrSettings.qr_enabled && <div>✓ Escanear o QR Code da empresa</div>}
+                      {qrSettings.geo_enabled && <div>✓ Estar no local autorizado</div>}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Status de validações */}
+                <div className="grid grid-cols-2 gap-2">
+                  {qrSettings?.qr_enabled && (
+                    <div className={`p-3 rounded-lg border ${scannedQR ? 'bg-success/10 border-success' : 'bg-muted border-border'}`}>
+                      <QrCode className={`h-5 w-5 mx-auto mb-1 ${scannedQR ? 'text-success' : 'text-muted-foreground'}`} />
+                      <p className="text-xs text-center">
+                        {scannedQR ? 'QR OK' : 'QR Pendente'}
+                      </p>
+                    </div>
+                  )}
+                  {qrSettings?.geo_enabled && (
+                    <div className={`p-3 rounded-lg border ${userLocation ? 'bg-success/10 border-success' : 'bg-muted border-border'}`}>
+                      <MapPin className={`h-5 w-5 mx-auto mb-1 ${userLocation ? 'text-success' : 'text-muted-foreground'}`} />
+                      <p className="text-xs text-center">
+                        {userLocation ? 'Local OK' : 'GPS Pendente'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Input de QR Code */}
+                {qrSettings?.qr_enabled && !scannedQR && (
+                  <div className="space-y-2">
+                    <Label>QR Code da Empresa</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={scannedQR}
+                        onChange={(e) => setScannedQR(e.target.value)}
+                        placeholder="Digite ou escaneie o código"
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowQRInput(!showQRInput)}
+                      >
+                        <QrCode className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Erros de validação */}
+                {validationErrors.length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      {validationErrors.map((error, i) => (
+                        <div key={i}>• {error}</div>
+                      ))}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="setor" className="text-base">Selecione o Setor</Label>
                   <Select value={selectedSetor} onValueChange={setSelectedSetor}>

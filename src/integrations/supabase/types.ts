@@ -41,6 +41,56 @@ export type Database = {
         }
         Relationships: []
       }
+      company_qr_settings: {
+        Row: {
+          company_id: string
+          created_at: string
+          geo_enabled: boolean
+          id: string
+          latitude: number | null
+          longitude: number | null
+          qr_code_token: string
+          qr_code_version: number
+          qr_enabled: boolean
+          radius_meters: number | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          geo_enabled?: boolean
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          qr_code_token: string
+          qr_code_version?: number
+          qr_enabled?: boolean
+          radius_meters?: number | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          geo_enabled?: boolean
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          qr_code_token?: string
+          qr_code_version?: number
+          qr_enabled?: boolean
+          radius_meters?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_qr_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           birth_date: string | null
@@ -93,6 +143,53 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      point_validation_logs: {
+        Row: {
+          created_at: string
+          distance_meters: number | null
+          employee_id: string
+          error_message: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          qr_code_provided: string | null
+          validation_status: string
+          validation_type: string
+        }
+        Insert: {
+          created_at?: string
+          distance_meters?: number | null
+          employee_id: string
+          error_message?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          qr_code_provided?: string | null
+          validation_status: string
+          validation_type: string
+        }
+        Update: {
+          created_at?: string
+          distance_meters?: number | null
+          employee_id?: string
+          error_message?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          qr_code_provided?: string | null
+          validation_status?: string
+          validation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_validation_logs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
