@@ -68,18 +68,18 @@ export default function Auth() {
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           {/* Logo/Brand */}
           <div className="text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/30 shadow-2xl shadow-amber-500/20 mb-4">
-              <Clock className="w-8 h-8 text-amber-400" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 shadow-2xl shadow-blue-500/10 mb-4">
+              <Clock className="w-8 h-8 text-slate-300" />
             </div>
             <div>
               <h1 className="text-5xl font-serif font-bold text-white tracking-tight">
-                Sistema de <span className="italic text-amber-400">Ponto</span>
+                Sistema de <span className="italic text-slate-300">Ponto</span>
               </h1>
             </div>
           </div>
 
           {/* Auth Card */}
-          <Card className="border-slate-800 bg-slate-950/80 backdrop-blur-xl shadow-2xl shadow-black/50 ring-1 ring-amber-500/10">
+          <Card className="border-slate-800 bg-slate-950/80 backdrop-blur-xl shadow-2xl shadow-black/50">
             <CardHeader className="space-y-1 pb-6">
               <CardTitle className="text-2xl font-serif text-slate-100">
                 {showEmailConfirmation ? 'Verificação' : 'Acesso'}
@@ -93,8 +93,8 @@ export default function Auth() {
             <CardContent>
               {showEmailConfirmation ? (
                 <div className="space-y-6 py-4 text-center">
-                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-amber-500/10 to-slate-800/50 rounded-full flex items-center justify-center mb-4 border border-amber-500/30">
-                    <svg className="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500/10 to-slate-800/50 rounded-full flex items-center justify-center mb-4 border border-blue-500/20">
+                    <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
@@ -111,7 +111,7 @@ export default function Auth() {
                     <Button 
                       onClick={handleResendEmail} 
                       variant="outline" 
-                      className="w-full border-amber-700/50 bg-slate-900/50 text-amber-400 hover:bg-amber-950/50 hover:text-amber-300 hover:border-amber-600/50 font-mono text-xs"
+                      className="w-full border-slate-700 bg-slate-900/50 text-slate-300 hover:bg-slate-800 hover:text-white font-mono text-xs"
                       disabled={isLoading}
                     >
                       {isLoading ? 'Reenviando...' : 'Reenviar E-mail'}
@@ -130,13 +130,13 @@ export default function Auth() {
                   <TabsList className="grid w-full grid-cols-2 bg-slate-900/50 border border-slate-800">
                     <TabsTrigger 
                       value="login" 
-                      className="font-mono text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/10 data-[state=active]:to-amber-600/10 data-[state=active]:text-amber-400 data-[state=active]:border-b-2 data-[state=active]:border-amber-500"
+                      className="font-mono text-xs data-[state=active]:bg-slate-800 data-[state=active]:text-white"
                     >
                       Entrar
                     </TabsTrigger>
                     <TabsTrigger 
                       value="signup"
-                      className="font-mono text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/10 data-[state=active]:to-amber-600/10 data-[state=active]:text-amber-400 data-[state=active]:border-b-2 data-[state=active]:border-amber-500"
+                      className="font-mono text-xs data-[state=active]:bg-slate-800 data-[state=active]:text-white"
                     >
                       Cadastrar
                     </TabsTrigger>
@@ -170,7 +170,7 @@ export default function Auth() {
                       </div>
                       <Button 
                         type="submit" 
-                        className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 hover:from-amber-400 hover:to-amber-500 font-mono text-xs tracking-wider mt-6 h-11 shadow-lg shadow-amber-500/25" 
+                        className="w-full bg-slate-100 text-slate-900 hover:bg-white font-mono text-xs tracking-wider mt-6 h-11" 
                         disabled={isLoading}
                       >
                         {isLoading ? 'Autenticando...' : 'Entrar no Sistema'}
@@ -219,7 +219,7 @@ export default function Auth() {
                       </div>
                       <Button 
                         type="submit" 
-                        className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 hover:from-amber-400 hover:to-amber-500 font-mono text-xs tracking-wider mt-6 h-11 shadow-lg shadow-amber-500/25" 
+                        className="w-full bg-slate-100 text-slate-900 hover:bg-white font-mono text-xs tracking-wider mt-6 h-11" 
                         disabled={isLoading}
                       >
                         {isLoading ? 'Criando conta...' : 'Criar Conta'}

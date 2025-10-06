@@ -30,8 +30,8 @@ export const AnimatedBackground = () => {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Initialize particles - increased density
-    const particleCount = Math.floor((canvas.width * canvas.height) / 8000);
+    // Initialize particles - much higher density
+    const particleCount = Math.floor((canvas.width * canvas.height) / 2000);
     particlesRef.current = Array.from({ length: particleCount }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
