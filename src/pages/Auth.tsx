@@ -68,36 +68,33 @@ export default function Auth() {
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           {/* Logo/Brand */}
           <div className="text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 shadow-2xl shadow-blue-500/10 mb-4">
-              <Clock className="w-8 h-8 text-slate-300" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/30 shadow-2xl shadow-amber-500/20 mb-4">
+              <Clock className="w-8 h-8 text-amber-400" />
             </div>
             <div>
-              <h1 className="text-5xl font-serif font-bold text-white tracking-tight mb-2">
-                Sistema de <span className="italic text-slate-300">Ponto</span>
+              <h1 className="text-5xl font-serif font-bold text-white tracking-tight">
+                Sistema de <span className="italic text-amber-400">Ponto</span>
               </h1>
-              <p className="text-slate-400 font-mono text-sm tracking-wider">
-                ENTERPRISE_TIME_TRACKING_v2.0
-              </p>
             </div>
           </div>
 
           {/* Auth Card */}
-          <Card className="border-slate-800 bg-slate-950/80 backdrop-blur-xl shadow-2xl shadow-black/50">
+          <Card className="border-slate-800 bg-slate-950/80 backdrop-blur-xl shadow-2xl shadow-black/50 ring-1 ring-amber-500/10">
             <CardHeader className="space-y-1 pb-6">
               <CardTitle className="text-2xl font-serif text-slate-100">
                 {showEmailConfirmation ? 'Verificação' : 'Acesso'}
               </CardTitle>
               <CardDescription className="text-slate-400 font-mono text-xs">
                 {showEmailConfirmation 
-                  ? 'CONFIRM_YOUR_IDENTITY' 
-                  : 'AUTHENTICATE_TO_CONTINUE'}
+                  ? 'Confirme sua identidade' 
+                  : 'Autentique-se para continuar'}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {showEmailConfirmation ? (
                 <div className="space-y-6 py-4 text-center">
-                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500/10 to-slate-800/50 rounded-full flex items-center justify-center mb-4 border border-blue-500/20">
-                    <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-amber-500/10 to-slate-800/50 rounded-full flex items-center justify-center mb-4 border border-amber-500/30">
+                    <svg className="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
@@ -114,17 +111,17 @@ export default function Auth() {
                     <Button 
                       onClick={handleResendEmail} 
                       variant="outline" 
-                      className="w-full border-slate-700 bg-slate-900/50 text-slate-300 hover:bg-slate-800 hover:text-white font-mono text-xs"
+                      className="w-full border-amber-700/50 bg-slate-900/50 text-amber-400 hover:bg-amber-950/50 hover:text-amber-300 hover:border-amber-600/50 font-mono text-xs"
                       disabled={isLoading}
                     >
-                      {isLoading ? 'RESENDING...' : 'RESEND_EMAIL'}
+                      {isLoading ? 'Reenviando...' : 'Reenviar E-mail'}
                     </Button>
                     <Button 
                       onClick={() => setShowEmailConfirmation(false)} 
                       variant="ghost" 
                       className="w-full text-slate-500 hover:text-slate-300 hover:bg-slate-900/50 font-mono text-xs"
                     >
-                      BACK_TO_LOGIN
+                      Voltar ao Login
                     </Button>
                   </div>
                 </div>
@@ -133,26 +130,26 @@ export default function Auth() {
                   <TabsList className="grid w-full grid-cols-2 bg-slate-900/50 border border-slate-800">
                     <TabsTrigger 
                       value="login" 
-                      className="font-mono text-xs data-[state=active]:bg-slate-800 data-[state=active]:text-white"
+                      className="font-mono text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/10 data-[state=active]:to-amber-600/10 data-[state=active]:text-amber-400 data-[state=active]:border-b-2 data-[state=active]:border-amber-500"
                     >
-                      LOGIN
+                      Entrar
                     </TabsTrigger>
                     <TabsTrigger 
                       value="signup"
-                      className="font-mono text-xs data-[state=active]:bg-slate-800 data-[state=active]:text-white"
+                      className="font-mono text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/10 data-[state=active]:to-amber-600/10 data-[state=active]:text-amber-400 data-[state=active]:border-b-2 data-[state=active]:border-amber-500"
                     >
-                      SIGNUP
+                      Cadastrar
                     </TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="login" className="mt-6">
                     <form onSubmit={handleSignIn} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="email-login" className="text-slate-300 font-mono text-xs">EMAIL</Label>
+                        <Label htmlFor="email-login" className="text-slate-300 font-mono text-xs">E-MAIL</Label>
                         <Input
                           id="email-login"
                           type="email"
-                          placeholder="user@domain.com"
+                          placeholder="usuario@dominio.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
@@ -160,7 +157,7 @@ export default function Auth() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="password-login" className="text-slate-300 font-mono text-xs">PASSWORD</Label>
+                        <Label htmlFor="password-login" className="text-slate-300 font-mono text-xs">SENHA</Label>
                         <Input
                           id="password-login"
                           type="password"
@@ -173,10 +170,10 @@ export default function Auth() {
                       </div>
                       <Button 
                         type="submit" 
-                        className="w-full bg-slate-100 text-slate-900 hover:bg-white font-mono text-xs tracking-wider mt-6 h-11" 
+                        className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 hover:from-amber-400 hover:to-amber-500 font-mono text-xs tracking-wider mt-6 h-11 shadow-lg shadow-amber-500/25" 
                         disabled={isLoading}
                       >
-                        {isLoading ? 'AUTHENTICATING...' : 'ENTER_SYSTEM'}
+                        {isLoading ? 'Autenticando...' : 'Entrar no Sistema'}
                       </Button>
                     </form>
                   </TabsContent>
@@ -184,11 +181,11 @@ export default function Auth() {
                   <TabsContent value="signup" className="mt-6">
                     <form onSubmit={handleSignUp} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name" className="text-slate-300 font-mono text-xs">FULL_NAME</Label>
+                        <Label htmlFor="name" className="text-slate-300 font-mono text-xs">NOME COMPLETO</Label>
                         <Input
                           id="name"
                           type="text"
-                          placeholder="John Doe"
+                          placeholder="João Silva"
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           required
@@ -196,11 +193,11 @@ export default function Auth() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="email-signup" className="text-slate-300 font-mono text-xs">EMAIL</Label>
+                        <Label htmlFor="email-signup" className="text-slate-300 font-mono text-xs">E-MAIL</Label>
                         <Input
                           id="email-signup"
                           type="email"
-                          placeholder="user@domain.com"
+                          placeholder="usuario@dominio.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
@@ -208,7 +205,7 @@ export default function Auth() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="password-signup" className="text-slate-300 font-mono text-xs">PASSWORD</Label>
+                        <Label htmlFor="password-signup" className="text-slate-300 font-mono text-xs">SENHA</Label>
                         <Input
                           id="password-signup"
                           type="password"
@@ -222,10 +219,10 @@ export default function Auth() {
                       </div>
                       <Button 
                         type="submit" 
-                        className="w-full bg-slate-100 text-slate-900 hover:bg-white font-mono text-xs tracking-wider mt-6 h-11" 
+                        className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 hover:from-amber-400 hover:to-amber-500 font-mono text-xs tracking-wider mt-6 h-11 shadow-lg shadow-amber-500/25" 
                         disabled={isLoading}
                       >
-                        {isLoading ? 'CREATING_ACCOUNT...' : 'CREATE_ACCOUNT'}
+                        {isLoading ? 'Criando conta...' : 'Criar Conta'}
                       </Button>
                     </form>
                   </TabsContent>
@@ -236,7 +233,7 @@ export default function Auth() {
 
           {/* Footer */}
           <p className="text-center text-slate-600 font-mono text-xs tracking-wider">
-            © 2025 — SECURE_ACCESS_PORTAL
+            © 2025 — Portal de Acesso Seguro
           </p>
         </div>
       </div>
