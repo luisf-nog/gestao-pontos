@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Search, Pencil, Trash2, Download, RefreshCw } from 'lucide-react';
@@ -56,6 +57,8 @@ export default function Ponto() {
   const [endDate, setEndDate] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<TimeRecord | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 30;
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -73,6 +76,7 @@ export default function Ponto() {
 
   useEffect(() => {
     filterRecords();
+    setCurrentPage(1); // Reset to first page when filters change
   }, [timeRecords, searchTerm, selectedEmployee, startDate, endDate]);
 
   const setQuickFilter = (filter: 'week' | 'lastWeek' | 'fortnight' | 'lastFortnight' | 'month') => {
@@ -586,88 +590,146 @@ export default function Ponto() {
         <CardHeader>
           <CardTitle>Registros de Ponto</CardTitle>
           <CardDescription>
-            {filteredRecords.length} registro(s) encontrado(s)
+            {filteredRecords.length} registro(s) encontrado(s) • Página {currentPage} de {Math.ceil(filteredRecords.length / itemsPerPage) || 1}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Funcionário</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Entrada</TableHead>
-                <TableHead>Saída</TableHead>
-                <TableHead>Setor</TableHead>
-                <TableHead>Horas</TableHead>
-                <TableHead>Diária</TableHead>
-                <TableHead>Extra</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRecords.length === 0 ? (
+        <CardContent className="space-y-4">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground">
-                    Nenhum registro encontrado
-                  </TableCell>
+                  <TableHead>Funcionário</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Entrada</TableHead>
+                  <TableHead>Saída</TableHead>
+                  <TableHead>Setor</TableHead>
+                  <TableHead>Horas</TableHead>
+                  <TableHead>Diária</TableHead>
+                  <TableHead>Extra</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
-              ) : (
-                filteredRecords.map((record) => (
-                  <TableRow key={record.id}>
-                    <TableCell className="font-medium">
-                      <div>{record.employees.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {record.employees.companies.name}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(record.date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
-                    </TableCell>
-                    <TableCell>{record.entry_time}</TableCell>
-                    <TableCell>
-                      {record.exit_time || <span className="text-amber-600">Pendente</span>}
-                    </TableCell>
-                    <TableCell>
-                      {record.setor ? (
-                        <span className="text-xs font-medium">{record.setor}</span>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{record.worked_hours?.toFixed(2) || '0.00'}h</TableCell>
-                    <TableCell className="text-green-600">
-                      R$ {record.daily_value?.toFixed(2) || '0.00'}
-                    </TableCell>
-                    <TableCell className="text-blue-600">
-                      R$ {record.overtime_value?.toFixed(2) || '0.00'}
-                    </TableCell>
-                    <TableCell className="font-semibold">
-                      R$ {record.total_value?.toFixed(2) || '0.00'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(record)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(record.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {filteredRecords.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={10} className="text-center text-muted-foreground">
+                      Nenhum registro encontrado
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  filteredRecords
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((record) => (
+                      <TableRow key={record.id}>
+                        <TableCell className="font-medium">
+                          <div>{record.employees.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {record.employees.companies.name}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(record.date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
+                        </TableCell>
+                        <TableCell>{record.entry_time}</TableCell>
+                        <TableCell>
+                          {record.exit_time || <span className="text-amber-600">Pendente</span>}
+                        </TableCell>
+                        <TableCell>
+                          {record.setor ? (
+                            <span className="text-xs font-medium">{record.setor}</span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{record.worked_hours?.toFixed(2) || '0.00'}h</TableCell>
+                        <TableCell className="text-green-600">
+                          R$ {record.daily_value?.toFixed(2) || '0.00'}
+                        </TableCell>
+                        <TableCell className="text-blue-600">
+                          R$ {record.overtime_value?.toFixed(2) || '0.00'}
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          R$ {record.total_value?.toFixed(2) || '0.00'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(record)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(record.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {filteredRecords.length > itemsPerPage && (
+            <div className="flex justify-center">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: Math.ceil(filteredRecords.length / itemsPerPage) }, (_, i) => i + 1)
+                    .filter(page => {
+                      // Show first, last, current, and adjacent pages
+                      const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
+                      return page === 1 || 
+                             page === totalPages || 
+                             Math.abs(page - currentPage) <= 1;
+                    })
+                    .map((page, index, array) => {
+                      // Add ellipsis if there's a gap
+                      const showEllipsisBefore = index > 0 && page - array[index - 1] > 1;
+                      
+                      return (
+                        <>
+                          {showEllipsisBefore && (
+                            <PaginationItem key={`ellipsis-${page}`}>
+                              <span className="px-4">...</span>
+                            </PaginationItem>
+                          )}
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              onClick={() => setCurrentPage(page)}
+                              isActive={currentPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        </>
+                      );
+                    })}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(prev => Math.min(Math.ceil(filteredRecords.length / itemsPerPage), prev + 1))}
+                      className={currentPage === Math.ceil(filteredRecords.length / itemsPerPage) ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
