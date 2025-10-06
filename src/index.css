@@ -8,119 +8,105 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Pop Minimalism - Neutral, Airy Base */
-    --background: 210 20% 98%;
-    --foreground: 220 15% 20%;
+    /* Elegant Dark System - Light Mode (for fallback) */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 20%;
+    --card-foreground: 240 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 20%;
+    --popover-foreground: 240 10% 10%;
 
-    /* Cobalt Blue - Primary Accent */
-    --primary: 218 89% 51%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    /* Soft Gray - Secondary */
-    --secondary: 210 17% 95%;
-    --secondary-foreground: 220 15% 20%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 6% 10%;
 
-    /* Light Background - Muted */
-    --muted: 210 17% 96%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
 
-    /* Neon Purple - Accent */
-    --accent: 270 75% 60%;
+    --accent: 217 91% 60%;
     --accent-foreground: 0 0% 100%;
 
-    /* Hot Coral - Destructive */
-    --destructive: 5 85% 63%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Citrus Orange - Success */
-    --success: 25 95% 53%;
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
-    /* Lime Green - Info */
-    --info: 145 65% 50%;
+    --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 218 89% 51%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 217 91% 60%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 15% 20%;
-    --sidebar-primary: 218 89% 51%;
+    --sidebar-foreground: 240 10% 10%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 20% 98%;
-    --sidebar-accent-foreground: 220 15% 20%;
-    --sidebar-border: 220 13% 93%;
-    --sidebar-ring: 218 89% 51%;
+    --sidebar-accent: 240 5% 96%;
+    --sidebar-accent-foreground: 240 6% 10%;
+    --sidebar-border: 240 6% 90%;
+    --sidebar-ring: 217 91% 60%;
 
-    /* Shadows & Elevation */
-    --shadow-sm: 0 1px 2px 0 hsl(220 15% 20% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(220 15% 20% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(220 15% 20% / 0.1);
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
   }
 
   .dark {
-    /* Pop Minimalism Dark - Deep but saturated */
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    /* Elegant Dark System - Deep, sophisticated dark theme */
+    --background: 240 10% 4%;
+    --foreground: 240 5% 96%;
 
-    --card: 222 47% 14%;
-    --card-foreground: 210 40% 98%;
+    --card: 240 10% 7%;
+    --card-foreground: 240 5% 96%;
 
-    --popover: 222 47% 14%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 240 10% 7%;
+    --popover-foreground: 240 5% 96%;
 
-    /* Cobalt Blue - Lighter for dark mode */
-    --primary: 218 89% 61%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 240 10% 4%;
 
-    --secondary: 217 32% 20%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 240 5% 96%;
 
-    --muted: 217 32% 18%;
-    --muted-foreground: 215 20% 70%;
+    --muted: 240 4% 12%;
+    --muted-foreground: 240 5% 65%;
 
-    /* Neon Purple - Accent */
-    --accent: 270 75% 65%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 240 10% 4%;
 
-    /* Hot Coral */
-    --destructive: 5 85% 68%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Citrus Orange */
-    --success: 25 95% 58%;
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
-    /* Lime Green */
-    --info: 145 65% 55%;
+    --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
-    --border: 217 32% 20%;
-    --input: 217 32% 20%;
-    --ring: 218 89% 61%;
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 217 91% 60%;
 
-    --sidebar-background: 222 47% 14%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 218 89% 61%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 217 32% 20%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 32% 20%;
-    --sidebar-ring: 218 89% 61%;
+    --sidebar-background: 240 10% 7%;
+    --sidebar-foreground: 240 5% 96%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 240 10% 4%;
+    --sidebar-accent: 240 4% 16%;
+    --sidebar-accent-foreground: 240 5% 96%;
+    --sidebar-border: 240 4% 16%;
+    --sidebar-ring: 217 91% 60%;
 
-    /* Shadows & Elevation */
-    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
-    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.4);
-    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.5);
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.8);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.8);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.9);
   }
 }
 
@@ -140,14 +126,29 @@ All colors MUST be HSL.
 
 @layer components {
   .card-pop {
-    @apply bg-card rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200;
+    @apply bg-card rounded-xl border border-border shadow-md hover:shadow-lg transition-all duration-300;
   }
 
   .btn-pop {
-    @apply rounded-full px-6 py-2.5 font-medium transition-all duration-200 hover:scale-105 active:scale-95;
+    @apply rounded-lg px-6 py-2.5 font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98];
   }
 
   .status-badge {
-    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-medium;
+    @apply inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }

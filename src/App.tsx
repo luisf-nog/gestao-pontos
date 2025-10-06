@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AdminRoute } from "@/components/AdminRoute";
+import { AnimatedBackground } from "@/components/AnimatedBackground";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -54,10 +55,13 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="relative min-h-screen flex w-full overflow-hidden">
+        {/* Animated background for all pages */}
+        <AnimatedBackground />
+        
         <AppSidebar />
-        <div className="flex-1 flex flex-col">
-          <header className="h-14 border-b flex items-center justify-between px-4 bg-background">
+        <div className="relative z-10 flex-1 flex flex-col">
+          <header className="h-14 border-b border-border/40 backdrop-blur-xl bg-background/80 flex items-center justify-between px-4">
             <SidebarTrigger />
             <Button
               variant="ghost"
@@ -83,7 +87,7 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
       <TooltipProvider>
         <Toaster />
         <Sonner />
