@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { LogIn, LogOut, Clock, Key, Calendar, QrCode, MapPin, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { QRScanner } from '@/components/QRScanner';
 
 interface Employee {
   id: string;
@@ -183,15 +184,16 @@ export default function PontoEletronico() {
       .from('employees')
       .select('id, name, is_active, company_id, companies(name)')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Erro ao buscar funcionário:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: 'Não foi possível carregar seus dados.',
-      });
+      setIsLoading(false);
+      return;
+    }
+
+    if (!data) {
+      // Usuário não vinculado a um funcionário: não é erro; apenas exibe tela informativa
       setIsLoading(false);
       return;
     }
@@ -217,7 +219,7 @@ export default function PontoEletronico() {
       .from('employees')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!employeeData) return;
 
@@ -612,6 +614,17 @@ export default function PontoEletronico() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {showQRInput && (
+        <QRScanner
+          onScan={(data) => {
+            setScannedQR(data);
+            setShowQRInput(false);
+            toast({ title: 'QR lido', description: 'Código capturado com sucesso.' });
+          }}
+          onClose={() => setShowQRInput(false)}
+        />
+      )}
     </div>
   );
 }
