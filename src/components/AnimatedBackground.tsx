@@ -22,24 +22,49 @@ export const AnimatedBackground = () => {
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+    let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+
+    const setupCanvas = () => {
+      dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const cssWidth = window.innerWidth;
+      const cssHeight = window.innerHeight;
+
+      // Set the display size (css pixels)
+      canvas.style.width = cssWidth + 'px';
+      canvas.style.height = cssHeight + 'px';
+
+      // Set the internal size (scaled for DPR)
+      canvas.width = Math.floor(cssWidth * dpr);
+      canvas.height = Math.floor(cssHeight * dpr);
+
+      // Reset transform and apply DPR scaling so we can draw using CSS pixels
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
     };
 
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    const initParticles = () => {
+      const cssWidth = window.innerWidth;
+      const cssHeight = window.innerHeight;
+      const density = 2000; // smaller = denser
+      const particleCount = Math.floor((cssWidth * cssHeight) / density);
+      particlesRef.current = Array.from({ length: particleCount }, () => ({
+        x: Math.random() * cssWidth,
+        y: Math.random() * cssHeight,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        size: Math.random() * 2 + 0.5,
+        opacity: Math.random() * 0.5 + 0.2,
+      }));
+    };
 
-    // Initialize particles - much higher density
-    const particleCount = Math.floor((canvas.width * canvas.height) / 2000);
-    particlesRef.current = Array.from({ length: particleCount }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      size: Math.random() * 2 + 0.5,
-      opacity: Math.random() * 0.5 + 0.2,
-    }));
+    const resizeCanvas = () => {
+      setupCanvas();
+      initParticles();
+    };
+
+    setupCanvas();
+    initParticles();
+    window.addEventListener('resize', resizeCanvas);
 
     // Track scroll for parallax
     const handleScroll = () => {
@@ -47,24 +72,31 @@ export const AnimatedBackground = () => {
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
 
-    const animate = () => {
-      if (!ctx || !canvas) return;
+    let running = true;
 
+    const animate = () => {
+      if (!ctx || !canvas || !running) return;
+
+      // Clear the full canvas safely with DPR transforms
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       // Apply parallax offset
       const parallaxOffset = scrollYRef.current * 0.3;
+      const cssWidth = window.innerWidth;
+      const cssHeight = window.innerHeight;
 
       particlesRef.current.forEach((particle, i) => {
         // Update position
         particle.x += particle.vx;
         particle.y += particle.vy;
 
-        // Wrap around edges
-        if (particle.x < 0) particle.x = canvas.width;
-        if (particle.x > canvas.width) particle.x = 0;
-        if (particle.y < 0) particle.y = canvas.height;
-        if (particle.y > canvas.height) particle.y = 0;
+        // Wrap around edges (CSS pixel space)
+        if (particle.x < 0) particle.x = cssWidth;
+        if (particle.x > cssWidth) particle.x = 0;
+        if (particle.y < 0) particle.y = cssHeight;
+        if (particle.y > cssHeight) particle.y = 0;
 
         // Draw particle with parallax
         const yPos = particle.y - parallaxOffset;
@@ -94,11 +126,23 @@ export const AnimatedBackground = () => {
       animationFrameRef.current = requestAnimationFrame(animate);
     };
 
-    animate();
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        running = false;
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      } else {
+        running = true;
+        animationFrameRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    animationFrameRef.current = requestAnimationFrame(animate);
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }

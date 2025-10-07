@@ -231,7 +231,7 @@ export default function Ponto() {
       .from('employees')
       .select('is_active')
       .eq('id', formData.employee_id)
-      .single();
+      .maybeSingle();
 
     if (checkError || !employeeCheck || !employeeCheck.is_active) {
       toast({

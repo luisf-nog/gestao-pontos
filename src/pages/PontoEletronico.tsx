@@ -259,7 +259,7 @@ export default function PontoEletronico() {
       .from('employees')
       .select('is_active')
       .eq('id', employee.id)
-      .single();
+      .maybeSingle();
 
     if (checkError || !activeCheck || !activeCheck.is_active) {
       toast({
@@ -311,7 +311,7 @@ export default function PontoEletronico() {
       .from('employees')
       .select('is_active')
       .eq('id', employee.id)
-      .single();
+      .maybeSingle();
 
     if (checkError || !activeCheck || !activeCheck.is_active) {
       toast({
