@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+import jsQR from 'jsqr';
 
 interface QRScannerProps {
   onScan: (data: string) => void;
@@ -48,9 +49,14 @@ export function QRScanner({ onScan, onClose }: QRScannerProps) {
           context.drawImage(video, 0, 0, canvas.width, canvas.height);
           const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
           
-          // Aqui você precisaria de uma biblioteca de QR code scanning
-          // Por simplicidade, vamos simular o scan após alguns segundos
-          // Em produção, use uma biblioteca como 'jsqr'
+          const code = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: "dontInvert",
+          });
+
+          if (code) {
+            onScan(code.data);
+            return;
+          }
         }
       }
 
@@ -107,15 +113,6 @@ export function QRScanner({ onScan, onClose }: QRScannerProps) {
       <p className="mt-4 text-center text-muted-foreground">
         Posicione o QR Code dentro do quadrado
       </p>
-
-      {/* Botão temporário para teste - remover em produção */}
-      <Button
-        onClick={() => onScan('test-qr-code-token')}
-        variant="outline"
-        className="mt-4"
-      >
-        Simular Scan (Teste)
-      </Button>
     </div>
   );
 }

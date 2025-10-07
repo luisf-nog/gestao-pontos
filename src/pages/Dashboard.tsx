@@ -46,35 +46,58 @@ export default function Dashboard() {
   const [monthlyOvertimeTotal, setMonthlyOvertimeTotal] = useState(0);
   const [sectorCosts, setSectorCosts] = useState<SectorCost[]>([]);
   const [prevMonthTotal, setPrevMonthTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const currentMonth = format(new Date(), 'MMMM \'de\' yyyy', { locale: ptBR });
   const previousMonth = format(new Date(new Date().setMonth(new Date().getMonth() - 1)), 'MMMM \'de\' yyyy', { locale: ptBR });
 
   useEffect(() => {
-    fetchDashboardData();
-    fetchSectorCosts();
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      await Promise.all([
+        fetchDashboardData(),
+        fetchSectorCosts()
+      ]);
+    } catch (err: any) {
+      console.error('Erro ao carregar dados do dashboard:', err);
+      setError(err.message || 'Não foi possível carregar os dados');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchDashboardData = async () => {
     // Buscar total de funcionários
-    const { count: employeesCount } = await supabase
+    const { count: employeesCount, error: empError } = await supabase
       .from('employees')
       .select('*', { count: 'exact', head: true });
 
+    if (empError) throw empError;
+
     // Buscar total de empresas
-    const { count: companiesCount } = await supabase
+    const { count: companiesCount, error: compError } = await supabase
       .from('companies')
       .select('*', { count: 'exact', head: true });
+
+    if (compError) throw compError;
 
     // Buscar registros do mês atual
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     
-    const { data: monthRecords } = await supabase
+    const { data: monthRecords, error: monthError } = await supabase
       .from('time_records')
       .select('id, total_value, daily_value, overtime_value')
       .gte('date', format(startOfMonth, 'yyyy-MM-dd'))
       .lte('date', format(endOfMonth, 'yyyy-MM-dd'));
+
+    if (monthError) throw monthError;
 
     const monthTotal = monthRecords?.reduce((sum, record) => sum + (record.total_value || 0), 0) || 0;
     const dailyTotal = monthRecords?.reduce((sum, record) => sum + (record.daily_value || 0), 0) || 0;
@@ -84,27 +107,33 @@ export default function Dashboard() {
     const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
     
-    const { data: prevMonthRecords } = await supabase
+    const { data: prevMonthRecords, error: prevMonthError } = await supabase
       .from('time_records')
       .select('total_value')
       .gte('date', format(startOfPrevMonth, 'yyyy-MM-dd'))
       .lte('date', format(endOfPrevMonth, 'yyyy-MM-dd'));
 
+    if (prevMonthError) throw prevMonthError;
+
     const prevTotal = prevMonthRecords?.reduce((sum, record) => sum + (record.total_value || 0), 0) || 0;
 
     // Buscar registros recentes
-    const { data: recent } = await supabase
+    const { data: recent, error: recentError } = await supabase
       .from('time_records')
       .select('id, date, entry_time, exit_time, total_value, employees(name)')
       .order('date', { ascending: false })
       .order('entry_time', { ascending: false })
       .limit(5);
 
+    if (recentError) throw recentError;
+
     // Buscar registros sem saída (pendentes)
-    const { count: pendingCount } = await supabase
+    const { count: pendingCount, error: pendingError } = await supabase
       .from('time_records')
       .select('*', { count: 'exact', head: true })
       .is('exit_time', null);
+
+    if (pendingError) throw pendingError;
 
     setStats({
       totalEmployees: employeesCount || 0,
@@ -125,12 +154,14 @@ export default function Dashboard() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('time_records')
       .select('setor, total_value')
       .gte('date', format(startOfMonth, 'yyyy-MM-dd'))
       .lte('date', format(endOfMonth, 'yyyy-MM-dd'))
       .not('setor', 'is', null);
+
+    if (error) throw error;
 
     if (data) {
       const costs = data.reduce((acc: any, record: any) => {
@@ -146,6 +177,38 @@ export default function Dashboard() {
       setSectorCosts(Object.values(costs));
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando dados...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle className="text-destructive">Erro ao carregar dados</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <button
+              onClick={loadData}
+              className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            >
+              Tentar novamente
+            </button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
