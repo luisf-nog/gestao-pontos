@@ -18,6 +18,27 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    console.log('Preparando processamento de funcionários sem usuário...');
+
+    // Helper: encontra usuário por email via API admin (paginada)
+    const findUserByEmail = async (emailToFind: string) => {
+      let page = 1;
+      const perPage = 200;
+      while (true) {
+        const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+        if (error) {
+          console.error('Erro ao listar usuários:', error);
+          throw error;
+        }
+        const users = data?.users ?? [];
+        const found = users.find((u: any) => (u.email ?? '').toLowerCase() === emailToFind.toLowerCase());
+        if (found) return found;
+        if (users.length < perPage) break; // última página
+        page++;
+      }
+      return null;
+    };
+
     console.log('Buscando funcionários sem usuário...');
 
     // Buscar todos os funcionários que não têm user_id
@@ -79,35 +100,48 @@ serve(async (req) => {
         
         const email = `${normalizedName}@${normalizedCompany}.com.br`;
 
-        console.log(`Criando usuário para ${employee.name} com email ${email}`);
+        console.log(`Garantindo usuário para ${employee.name} com email ${email}`);
 
-        // Criar usuário
-        const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
-          email,
-          password: '123',
-          email_confirm: true,
-          user_metadata: {
-            full_name: employee.name,
-            employee_id: employee.id
-          }
-        });
+        let targetUser: any = await findUserByEmail(email);
+        let createdNewUser = false;
 
-        if (userError) {
-          console.error(`Erro ao criar usuário para ${employee.name}:`, userError);
-          results.errors++;
-          results.details.push({
-            employee: employee.name,
+        if (!targetUser) {
+          const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
             email,
-            error: userError.message
+            password: '123',
+            email_confirm: true,
+            user_metadata: {
+              full_name: employee.name,
+              employee_id: employee.id
+            }
           });
-          continue;
+
+          if (userError) {
+            if ((userError as any).code === 'email_exists' || (userError as any).message?.toLowerCase().includes('already been registered')) {
+              console.warn(`Email já registrado para ${employee.name}, vinculando existente`);
+              targetUser = await findUserByEmail(email);
+              if (!targetUser) {
+                results.errors++;
+                results.details.push({ employee: employee.name, email, error: userError.message });
+                continue;
+              }
+            } else {
+              console.error(`Erro ao criar usuário para ${employee.name}:`, userError);
+              results.errors++;
+              results.details.push({ employee: employee.name, email, error: userError.message });
+              continue;
+            }
+          } else {
+            createdNewUser = true;
+            targetUser = userData?.user;
+          }
         }
 
         // Atualizar funcionário com user_id e email
         const { error: updateError } = await supabaseAdmin
           .from('employees')
           .update({ 
-            user_id: userData.user.id,
+            user_id: targetUser.id,
             email: email
           })
           .eq('id', employee.id);
@@ -123,12 +157,15 @@ serve(async (req) => {
           continue;
         }
 
-        // Adicionar role "user"
+        // Garantir role "user" (upsert idempotente)
         const { error: roleError } = await supabaseAdmin
           .from('user_roles')
-          .insert({
-            user_id: userData.user.id,
+          .upsert({
+            user_id: targetUser.id,
             role: 'user'
+          }, {
+            onConflict: 'user_id,role',
+            ignoreDuplicates: true
           });
 
         if (roleError) {
