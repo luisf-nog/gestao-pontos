@@ -55,12 +55,15 @@ serve(async (req) => {
       throw updateError;
     }
 
-    // Adicionar role "user" ao funcionário
+    // Adicionar role "user" ao funcionário (usar ON CONFLICT para evitar duplicação)
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .insert({
+      .upsert({
         user_id: userData.user.id,
         role: 'user'
+      }, {
+        onConflict: 'user_id,role',
+        ignoreDuplicates: true
       });
 
     if (roleError) {
