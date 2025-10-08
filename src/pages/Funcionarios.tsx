@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Plus, Pencil, Trash2, AlertCircle, CheckCircle2, Upload, X, Search } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { generateEmployeeEmail } from '@/utils/emailGenerator';
 
 interface Company {
   id: string;
@@ -68,24 +69,7 @@ export default function Funcionarios() {
     if (formData.name && formData.company_id && !editingEmployee) {
       const company = companies.find(c => c.id === formData.company_id);
       if (company) {
-        // Normalizar nome: remover acentos, converter para minúsculas
-        const normalizedName = formData.name
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .toLowerCase()
-          .trim()
-          .replace(/\s+/g, '.');
-        
-        // Normalizar nome da empresa
-        const normalizedCompany = company.name
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .toLowerCase()
-          .trim()
-          .replace(/\s+/g, '')
-          .replace(/[^a-z0-9]/g, '');
-        
-        const generatedEmail = `${normalizedName}@${normalizedCompany}.com.br`;
+        const generatedEmail = generateEmployeeEmail(formData.name, company.name);
         setFormData(prev => ({ ...prev, email: generatedEmail }));
       }
     }

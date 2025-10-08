@@ -82,13 +82,23 @@ serve(async (req) => {
     // Processar cada funcionário
     for (const employee of employees) {
       try {
-        // Gerar email baseado no nome e empresa
-        const normalizedName = employee.name
+        // Gerar email baseado no nome e empresa (primeiro nome + último sobrenome)
+        const nameParts = employee.name
           .normalize('NFD')
           .replace(/[\u0300-\u036f]/g, '')
           .toLowerCase()
           .trim()
-          .replace(/\s+/g, '.');
+          .split(/\s+/)
+          .filter((part: string) => part.length > 0);
+
+        let emailName: string;
+        if (nameParts.length === 1) {
+          emailName = nameParts[0];
+        } else {
+          const firstName = nameParts[0];
+          const lastName = nameParts[nameParts.length - 1];
+          emailName = `${firstName}.${lastName}`;
+        }
         
         const normalizedCompany = employee.companies.name
           .normalize('NFD')
@@ -98,7 +108,7 @@ serve(async (req) => {
           .replace(/\s+/g, '')
           .replace(/[^a-z0-9]/g, '');
         
-        const email = `${normalizedName}@${normalizedCompany}.com.br`;
+        const email = `${emailName}@${normalizedCompany}.com.br`;
 
         console.log(`Garantindo usuário para ${employee.name} com email ${email}`);
 
