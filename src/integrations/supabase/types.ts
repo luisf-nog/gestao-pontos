@@ -106,6 +106,7 @@ export type Database = {
           photo_url: string | null
           updated_at: string
           user_id: string | null
+          work_location: Database["public"]["Enums"]["work_location"] | null
         }
         Insert: {
           birth_date?: string | null
@@ -121,6 +122,7 @@ export type Database = {
           photo_url?: string | null
           updated_at?: string
           user_id?: string | null
+          work_location?: Database["public"]["Enums"]["work_location"] | null
         }
         Update: {
           birth_date?: string | null
@@ -136,6 +138,7 @@ export type Database = {
           photo_url?: string | null
           updated_at?: string
           user_id?: string | null
+          work_location?: Database["public"]["Enums"]["work_location"] | null
         }
         Relationships: [
           {
@@ -227,10 +230,15 @@ export type Database = {
           entry_time: string
           exit_time: string | null
           id: string
+          lunch_discount: number | null
+          lunch_exit_time: string | null
+          lunch_hours: number | null
+          lunch_return_time: string | null
           overtime_value: number | null
           setor: Database["public"]["Enums"]["setor_type"] | null
           total_value: number | null
           updated_at: string
+          work_location_id: string | null
           worked_hours: number | null
         }
         Insert: {
@@ -241,10 +249,15 @@ export type Database = {
           entry_time: string
           exit_time?: string | null
           id?: string
+          lunch_discount?: number | null
+          lunch_exit_time?: string | null
+          lunch_hours?: number | null
+          lunch_return_time?: string | null
           overtime_value?: number | null
           setor?: Database["public"]["Enums"]["setor_type"] | null
           total_value?: number | null
           updated_at?: string
+          work_location_id?: string | null
           worked_hours?: number | null
         }
         Update: {
@@ -255,10 +268,15 @@ export type Database = {
           entry_time?: string
           exit_time?: string | null
           id?: string
+          lunch_discount?: number | null
+          lunch_exit_time?: string | null
+          lunch_hours?: number | null
+          lunch_return_time?: string | null
           overtime_value?: number | null
           setor?: Database["public"]["Enums"]["setor_type"] | null
           total_value?: number | null
           updated_at?: string
+          work_location_id?: string | null
           worked_hours?: number | null
         }
         Relationships: [
@@ -267,6 +285,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_records_work_location_id_fkey"
+            columns: ["work_location_id"]
+            isOneToOne: false
+            referencedRelation: "work_locations"
             referencedColumns: ["id"]
           },
         ]
@@ -292,6 +317,65 @@ export type Database = {
         }
         Relationships: []
       }
+      work_locations: {
+        Row: {
+          address: string | null
+          company_id: string
+          created_at: string
+          geo_enabled: boolean
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+          qr_code_token: string
+          qr_code_version: number
+          qr_enabled: boolean
+          radius_meters: number | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          company_id: string
+          created_at?: string
+          geo_enabled?: boolean
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          qr_code_token?: string
+          qr_code_version?: number
+          qr_enabled?: boolean
+          radius_meters?: number | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          company_id?: string
+          created_at?: string
+          geo_enabled?: boolean
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          qr_code_token?: string
+          qr_code_version?: number
+          qr_enabled?: boolean
+          radius_meters?: number | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_locations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -307,7 +391,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user" | "dev"
-      setor_type: "LOGISTICA" | "QUALIDADE"
+      setor_type: "Logística" | "Qualidade"
+      work_location: "Matriz" | "Filial" | "Ambas"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -436,7 +521,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user", "dev"],
-      setor_type: ["LOGISTICA", "QUALIDADE"],
+      setor_type: ["Logística", "Qualidade"],
+      work_location: ["Matriz", "Filial", "Ambas"],
     },
   },
 } as const

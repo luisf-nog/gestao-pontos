@@ -22,6 +22,7 @@ import Relatorios from "./pages/Relatorios";
 import ImportarDados from "./pages/ImportarDados";
 import Settings from "./pages/Settings";
 import QRCodePage from "./pages/QRCode";
+import WorkLocations from "./pages/WorkLocations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -104,6 +105,7 @@ const App = () => (
               <Route path="/funcionarios" element={<ProtectedLayout><AdminRoute><Funcionarios /></AdminRoute></ProtectedLayout>} />
               <Route path="/empresas" element={<ProtectedLayout><AdminRoute><Empresas /></AdminRoute></ProtectedLayout>} />
               <Route path="/qrcode" element={<ProtectedLayout><AdminRoute><QRCodePage /></AdminRoute></ProtectedLayout>} />
+              <Route path="/locais" element={<ProtectedLayout><AdminRoute><WorkLocations /></AdminRoute></ProtectedLayout>} />
               <Route path="/importar" element={<ProtectedLayout><AdminRoute><ImportarDados /></AdminRoute></ProtectedLayout>} />
               <Route path="/settings" element={<ProtectedLayout><Settings /></ProtectedLayout>} />
               <Route path="*" element={<NotFound />} />
