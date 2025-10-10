@@ -244,6 +244,47 @@ export default function WorkLocations() {
     link.click();
   };
 
+  const geocodeAddress = async () => {
+    if (!formData.address || formData.address.trim().length < 10) return;
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.address)}&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'Ponto Eletrônico App',
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        setFormData({
+          ...formData,
+          latitude: data[0].lat,
+          longitude: data[0].lon,
+        });
+        toast({
+          title: 'Coordenadas geradas!',
+          description: 'Latitude e longitude obtidas do endereço informado.',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Endereço não encontrado',
+          description: 'Não foi possível gerar as coordenadas. Verifique o endereço e tente novamente.',
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao buscar coordenadas',
+        description: 'Não foi possível acessar o serviço de geocodificação.',
+      });
+    }
+  };
+
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -420,13 +461,17 @@ export default function WorkLocations() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address">Endereço</Label>
+              <Label htmlFor="address">Endereço Completo</Label>
               <Input
                 id="address"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="Rua, número, bairro, cidade"
+                onBlur={geocodeAddress}
+                placeholder="Ex: Rua das Flores, 123, Centro, Curitiba, PR"
               />
+              <p className="text-xs text-muted-foreground">
+                Quando você inserir o endereço completo e sair do campo, as coordenadas serão geradas automaticamente
+              </p>
             </div>
 
             <div className="space-y-3">

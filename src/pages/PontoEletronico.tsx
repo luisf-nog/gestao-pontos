@@ -104,15 +104,22 @@ export default function PontoEletronico() {
   const fetchWorkLocations = async () => {
     if (!employee) return;
 
-    const { data } = await supabase
-      .from('work_locations')
-      .select('*')
-      .eq('company_id', employee.company_id);
+    // Buscar locais autorizados para este funcionário
+    const { data: authorizedLocations } = await supabase
+      .from('employee_work_locations')
+      .select('work_location_id, work_locations(*)')
+      .eq('employee_id', employee.id);
 
-    if (data && data.length > 0) {
-      setWorkLocations(data);
-      // Selecionar automaticamente o primeiro local
-      setSelectedLocation(data[0]);
+    if (authorizedLocations && authorizedLocations.length > 0) {
+      const locations = authorizedLocations.map(al => al.work_locations).filter(Boolean);
+      setWorkLocations(locations as WorkLocation[]);
+      // Não seleciona automaticamente - força o usuário a escolher após verificar a localização
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Sem locais autorizados',
+        description: 'Você não tem locais de trabalho autorizados. Entre em contato com o administrador.',
+      });
     }
   };
 
@@ -131,56 +138,74 @@ export default function PontoEletronico() {
     return R * c; // Distância em metros
   };
 
-  const validatePoint = async (): Promise<{ valid: boolean; errors: string[]; distance?: number }> => {
+  const validatePoint = async (): Promise<{ valid: boolean; errors: string[]; distance?: number; nearestLocation?: WorkLocation }> => {
     const errors: string[] = [];
     let calculatedDistance: number | undefined;
+    let nearestLocation: WorkLocation | undefined;
 
-    if (!selectedLocation) {
-      errors.push('Selecione um local de trabalho');
+    // ETAPA 1: Validar Geolocalização PRIMEIRO
+    if (!userLocation) {
+      errors.push('Não foi possível obter sua localização. Ative o GPS do dispositivo e tente novamente.');
       return { valid: false, errors };
     }
 
-    // Validar QR Code
-    if (selectedLocation.qr_enabled) {
+    // Verificar qual local está mais próximo do usuário
+    const locationsWithDistance = workLocations.map(loc => {
+      if (!loc.latitude || !loc.longitude) return null;
+      
+      const distance = calculateDistance(
+        userLocation.latitude,
+        userLocation.longitude,
+        loc.latitude,
+        loc.longitude
+      );
+
+      return { location: loc, distance };
+    }).filter(Boolean);
+
+    if (locationsWithDistance.length === 0) {
+      errors.push('Nenhum local de trabalho configurado com coordenadas.');
+      return { valid: false, errors };
+    }
+
+    // Ordenar por distância
+    locationsWithDistance.sort((a, b) => a!.distance - b!.distance);
+    const nearest = locationsWithDistance[0]!;
+    nearestLocation = nearest.location;
+    calculatedDistance = nearest.distance;
+
+    // Verificar se está dentro do raio permitido
+    if (nearest.location.geo_enabled) {
+      if (calculatedDistance > nearest.location.radius_meters) {
+        errors.push(`Você está muito longe do local de trabalho. Aproxime-se para registrar ponto.`);
+        errors.push(`Distância atual: ${Math.round(calculatedDistance)}m do local ${nearest.location.name}`);
+        errors.push(`Distância máxima permitida: ${nearest.location.radius_meters}m`);
+        await logValidation('geolocation', 'out_of_area', null, calculatedDistance);
+        return { valid: false, errors, distance: calculatedDistance, nearestLocation };
+      }
+    }
+
+    // ETAPA 2: Validar QR Code (deve corresponder ao local detectado pela geolocalização)
+    if (nearest.location.qr_enabled) {
       if (!scannedQR) {
-        errors.push('QR Code não escaneado');
-      } else if (scannedQR !== selectedLocation.qr_code_token) {
-        errors.push('QR Code inválido');
-        await logValidation('qr_code', 'invalid_qr', scannedQR);
+        errors.push('Escaneie o QR Code do local de trabalho para continuar.');
+        return { valid: false, errors, distance: calculatedDistance, nearestLocation };
+      }
+
+      // Verificar se o QR Code corresponde ao local detectado
+      if (scannedQR !== nearest.location.qr_code_token) {
+        errors.push('QR Code incompatível com sua localização atual.');
+        errors.push(`Você está próximo ao local: ${nearest.location.name}`);
+        errors.push('Escaneie o QR Code correto deste local.');
+        await logValidation('qr_code', 'invalid_qr_location_mismatch', scannedQR);
+        return { valid: false, errors, distance: calculatedDistance, nearestLocation };
       }
     }
 
-    // Validar Geolocalização
-    if (selectedLocation.geo_enabled) {
-      if (!userLocation) {
-        errors.push('Localização não obtida. Ative o GPS do dispositivo');
-        await logValidation('geolocation', 'gps_disabled', null);
-      } else if (selectedLocation.latitude && selectedLocation.longitude) {
-        calculatedDistance = calculateDistance(
-          userLocation.latitude,
-          userLocation.longitude,
-          selectedLocation.latitude,
-          selectedLocation.longitude
-        );
-
-        console.log('Validação de distância:', {
-          userLat: userLocation.latitude,
-          userLng: userLocation.longitude,
-          locationLat: selectedLocation.latitude,
-          locationLng: selectedLocation.longitude,
-          distance: calculatedDistance,
-          radiusAllowed: selectedLocation.radius_meters
-        });
-
-        if (calculatedDistance > selectedLocation.radius_meters) {
-          errors.push(`Você está fora da área permitida (${Math.round(calculatedDistance)}m de distância)`);
-          await logValidation('geolocation', 'out_of_area', null, calculatedDistance);
-        }
-      }
-    }
-
-    setValidationErrors(errors);
-    return { valid: errors.length === 0, errors, distance: calculatedDistance };
+    // Validação bem-sucedida
+    setSelectedLocation(nearest.location);
+    setValidationErrors([]);
+    return { valid: true, errors: [], distance: calculatedDistance, nearestLocation };
   };
 
   const logValidation = async (
@@ -548,92 +573,94 @@ export default function PontoEletronico() {
 
           {!hasEntryToday ? (
             <div className="text-center space-y-4">
-              <p className="text-muted-foreground mb-4">Você ainda não registrou entrada hoje</p>
+              <p className="text-muted-foreground mb-4">Para registrar entrada, siga os passos abaixo</p>
               
               <div className="space-y-4 max-w-md mx-auto">
-                {/* Seleção de Local */}
-                {workLocations.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Local de Trabalho</Label>
-                    <Select 
-                      value={selectedLocation?.id} 
-                      onValueChange={(id) => setSelectedLocation(workLocations.find(l => l.id === id) || null)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o local" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {workLocations.map(location => (
-                          <SelectItem key={location.id} value={location.id}>
-                            {location.name} ({location.type})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {/* Validações necessárias */}
-                {selectedLocation && (selectedLocation.qr_enabled || selectedLocation.geo_enabled) && (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-sm">
-                      Para registrar ponto você precisa:
-                      {selectedLocation.qr_enabled && <div>✓ Escanear o QR Code da empresa</div>}
-                      {selectedLocation.geo_enabled && <div>✓ Estar no local autorizado</div>}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {/* Status de validações */}
-                <div className="grid grid-cols-2 gap-2">
-                  {selectedLocation?.qr_enabled && (
-                    <div className={`p-3 rounded-lg border ${scannedQR ? 'bg-green-100 dark:bg-green-900/20 border-green-500' : 'bg-muted border-border'}`}>
-                      <QrCode className={`h-5 w-5 mx-auto mb-1 ${scannedQR ? 'text-green-600' : 'text-muted-foreground'}`} />
-                      <p className="text-xs text-center font-medium">
-                        {scannedQR ? 'QR OK' : 'QR Pendente'}
-                      </p>
-                    </div>
-                  )}
-                  {selectedLocation?.geo_enabled && (
-                    <div className={`p-3 rounded-lg border ${userLocation ? 'bg-green-100 dark:bg-green-900/20 border-green-500' : 'bg-muted border-border'}`}>
-                      <MapPin className={`h-5 w-5 mx-auto mb-1 ${userLocation ? 'text-green-600' : 'text-muted-foreground'}`} />
-                      <p className="text-xs text-center font-medium">
-                        {userLocation ? 'Local OK' : 'GPS Pendente'}
-                      </p>
-                      {userLocation && selectedLocation?.latitude && selectedLocation?.longitude && (
-                        <p className="text-xs text-center text-muted-foreground mt-1">
-                          ~{Math.round(calculateDistance(
+                {/* ETAPA 1: Verificação de Geolocalização */}
+                <Alert className={userLocation ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'border-blue-500'}>
+                  <MapPin className={`h-4 w-4 ${userLocation ? 'text-green-600' : 'text-blue-600'}`} />
+                  <AlertDescription>
+                    <div className="font-semibold mb-1">Etapa 1: Verificação de Localização</div>
+                    {!userLocation ? (
+                      <div className="text-sm">
+                        Ative o GPS do seu dispositivo para continuar...
+                        <Button 
+                          variant="link" 
+                          size="sm" 
+                          onClick={requestLocation}
+                          className="p-0 h-auto ml-2"
+                        >
+                          Tentar novamente
+                        </Button>
+                      </div>
+                    ) : workLocations.length > 0 ? (
+                      <div className="text-sm text-green-700 dark:text-green-400">
+                        ✓ Localização obtida com sucesso!
+                        {workLocations.map(loc => {
+                          if (!loc.latitude || !loc.longitude) return null;
+                          const distance = calculateDistance(
                             userLocation.latitude,
                             userLocation.longitude,
-                            selectedLocation.latitude,
-                            selectedLocation.longitude
-                          ))}m
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
+                            loc.latitude,
+                            loc.longitude
+                          );
+                          const withinRadius = distance <= loc.radius_meters;
+                          return (
+                            <div key={loc.id} className={`mt-1 ${withinRadius ? 'text-green-700 dark:text-green-400 font-medium' : 'text-muted-foreground'}`}>
+                              {withinRadius ? '✓' : '○'} {loc.name}: {Math.round(distance)}m 
+                              {withinRadius && ' (Você está no local!)'}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-green-700 dark:text-green-400">
+                        ✓ Localização obtida!
+                      </div>
+                    )}
+                  </AlertDescription>
+                </Alert>
 
-                {/* Input de QR Code */}
-                {selectedLocation?.qr_enabled && !scannedQR && (
-                  <div className="space-y-2">
-                    <Label>QR Code da Empresa</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        value={scannedQR}
-                        onChange={(e) => setScannedQR(e.target.value)}
-                        placeholder="Digite ou escaneie o código"
-                        className="flex-1"
-                      />
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowQRInput(!showQRInput)}
-                      >
-                        <QrCode className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+                {/* ETAPA 2: Escaneamento de QR Code (só aparece se localização OK) */}
+                {userLocation && workLocations.length > 0 && (
+                  <Alert className={scannedQR ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'border-blue-500'}>
+                    <QrCode className={`h-4 w-4 ${scannedQR ? 'text-green-600' : 'text-blue-600'}`} />
+                    <AlertDescription>
+                      <div className="font-semibold mb-2">Etapa 2: Escaneie o QR Code</div>
+                      {!scannedQR ? (
+                        <div className="space-y-2">
+                          <p className="text-sm">Escaneie o QR Code do local de trabalho</p>
+                          <div className="flex gap-2">
+                            <Input
+                              value={scannedQR}
+                              onChange={(e) => setScannedQR(e.target.value)}
+                              placeholder="Digite ou escaneie o código"
+                              className="flex-1"
+                            />
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setShowQRInput(!showQRInput)}
+                            >
+                              <QrCode className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-green-700 dark:text-green-400">
+                          ✓ QR Code escaneado com sucesso!
+                          <Button 
+                            variant="link" 
+                            size="sm"
+                            onClick={() => setScannedQR('')}
+                            className="p-0 h-auto ml-2"
+                          >
+                            Escanear novamente
+                          </Button>
+                        </div>
+                      )}
+                    </AlertDescription>
+                  </Alert>
                 )}
 
                 {/* Erros de validação */}
@@ -642,7 +669,7 @@ export default function PontoEletronico() {
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
                       {validationErrors.map((error, i) => (
-                        <div key={i}>• {error}</div>
+                        <div key={i} className="mb-1">• {error}</div>
                       ))}
                     </AlertDescription>
                   </Alert>

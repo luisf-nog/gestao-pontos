@@ -22,6 +22,12 @@ interface Company {
   name: string;
 }
 
+interface WorkLocation {
+  id: string;
+  name: string;
+  type: string;
+}
+
 interface Employee {
   id: string;
   name: string;
@@ -42,6 +48,8 @@ interface Employee {
 export default function Funcionarios() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [workLocations, setWorkLocations] = useState<WorkLocation[]>([]);
+  const [selectedWorkLocations, setSelectedWorkLocations] = useState<string[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [nameCheckStatus, setNameCheckStatus] = useState<'idle' | 'checking' | 'duplicate' | 'available'>('idle');
@@ -80,6 +88,12 @@ export default function Funcionarios() {
     fetchEmployees();
   }, []);
 
+  useEffect(() => {
+    if (formData.company_id) {
+      fetchWorkLocations(formData.company_id);
+    }
+  }, [formData.company_id]);
+
   const fetchCompanies = async () => {
     const { data, error } = await supabase
       .from('companies')
@@ -96,6 +110,25 @@ export default function Funcionarios() {
     }
 
     setCompanies(data || []);
+  };
+
+  const fetchWorkLocations = async (companyId: string) => {
+    const { data, error } = await supabase
+      .from('work_locations')
+      .select('id, name, type')
+      .eq('company_id', companyId)
+      .order('name');
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao carregar locais de trabalho',
+        description: error.message,
+      });
+      return;
+    }
+
+    setWorkLocations(data || []);
   };
 
   const fetchEmployees = async () => {
@@ -224,6 +257,15 @@ export default function Funcionarios() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (selectedWorkLocations.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Selecione pelo menos um local',
+        description: 'O funcionário precisa ter pelo menos um local de trabalho autorizado.',
+      });
+      return;
+    }
+
     if (editingEmployee) {
       // Upload da foto se houver
       let photoUrl = editingEmployee.photo_url;
@@ -264,6 +306,21 @@ export default function Funcionarios() {
         return;
       }
 
+      // Atualizar locais de trabalho autorizados
+      await supabase
+        .from('employee_work_locations')
+        .delete()
+        .eq('employee_id', editingEmployee.id);
+
+      const locationsToInsert = selectedWorkLocations.map(locationId => ({
+        employee_id: editingEmployee.id,
+        work_location_id: locationId,
+      }));
+
+      await supabase
+        .from('employee_work_locations')
+        .insert(locationsToInsert);
+
       toast({
         title: 'Funcionário atualizado!',
         description: 'Os dados foram atualizados com sucesso.',
@@ -303,6 +360,16 @@ export default function Funcionarios() {
             .eq('id', newEmployee.id);
         }
       }
+
+      // Adicionar locais de trabalho autorizados
+      const locationsToInsert = selectedWorkLocations.map(locationId => ({
+        employee_id: newEmployee.id,
+        work_location_id: locationId,
+      }));
+
+      await supabase
+        .from('employee_work_locations')
+        .insert(locationsToInsert);
 
       // Criar usuário automaticamente se email foi gerado
       if (formData.email && newEmployee) {
@@ -349,7 +416,7 @@ export default function Funcionarios() {
     fetchEmployees();
   };
 
-  const handleEdit = (employee: Employee) => {
+  const handleEdit = async (employee: Employee) => {
     console.log('Editando funcionário:', employee);
     console.log('is_active do funcionário:', employee.is_active);
     
@@ -366,6 +433,17 @@ export default function Funcionarios() {
     });
     setPhotoPreview(employee.photo_url);
     setPhotoFile(null);
+
+    // Carregar locais de trabalho autorizados
+    const { data: authorizedLocations } = await supabase
+      .from('employee_work_locations')
+      .select('work_location_id')
+      .eq('employee_id', employee.id);
+
+    if (authorizedLocations) {
+      setSelectedWorkLocations(authorizedLocations.map(loc => loc.work_location_id));
+    }
+
     setIsDialogOpen(true);
   };
 
@@ -409,6 +487,8 @@ export default function Funcionarios() {
     setDuplicateEmployees([]);
     setPhotoFile(null);
     setPhotoPreview(null);
+    setSelectedWorkLocations([]);
+    setWorkLocations([]);
   };
 
   const handleDialogClose = () => {
@@ -624,7 +704,7 @@ export default function Funcionarios() {
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="company">Empresa</Label>
+                    <Label htmlFor="company">Empresa *</Label>
                     <Select
                       value={formData.company_id}
                       onValueChange={(value) => setFormData({ ...formData, company_id: value })}
@@ -642,6 +722,47 @@ export default function Funcionarios() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {formData.company_id && workLocations.length > 0 && (
+                    <div className="space-y-3">
+                      <Label>Locais de Trabalho Autorizados *</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Selecione os locais onde este funcionário pode bater ponto
+                      </p>
+                      <div className="space-y-2 border rounded-lg p-4">
+                        {workLocations.map((location) => (
+                          <div key={location.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`location-${location.id}`}
+                              checked={selectedWorkLocations.includes(location.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedWorkLocations([...selectedWorkLocations, location.id]);
+                                } else {
+                                  setSelectedWorkLocations(
+                                    selectedWorkLocations.filter((id) => id !== location.id)
+                                  );
+                                }
+                              }}
+                              className="h-4 w-4 rounded border-gray-300"
+                            />
+                            <Label
+                              htmlFor={`location-${location.id}`}
+                              className="text-sm font-normal cursor-pointer"
+                            >
+                              {location.name} ({location.type})
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                      {selectedWorkLocations.length === 0 && (
+                        <p className="text-sm text-destructive">
+                          Selecione pelo menos um local de trabalho
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
