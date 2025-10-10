@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Pencil, Trash2, AlertCircle, CheckCircle2, Upload, X, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertCircle, CheckCircle2, Upload, X, Search, MapPin } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { generateEmployeeEmail } from '@/utils/emailGenerator';
 
@@ -707,7 +707,10 @@ export default function Funcionarios() {
                     <Label htmlFor="company">Empresa *</Label>
                     <Select
                       value={formData.company_id}
-                      onValueChange={(value) => setFormData({ ...formData, company_id: value })}
+                      onValueChange={(value) => {
+                        setFormData({ ...formData, company_id: value });
+                        setSelectedWorkLocations([]); // Limpar locais ao trocar empresa
+                      }}
                       required
                     >
                       <SelectTrigger>
@@ -724,14 +727,17 @@ export default function Funcionarios() {
                   </div>
 
                   {formData.company_id && workLocations.length > 0 && (
-                    <div className="space-y-3">
-                      <Label>Locais de Trabalho Autorizados *</Label>
+                    <div className="space-y-3 p-4 border-2 border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-5 w-5 text-blue-600" />
+                        <Label className="text-base font-semibold">Locais de Trabalho Autorizados *</Label>
+                      </div>
                       <p className="text-sm text-muted-foreground">
-                        Selecione os locais onde este funcionário pode bater ponto
+                        Selecione os locais onde este funcionário pode bater ponto. O funcionário só conseguirá registrar ponto nos locais marcados abaixo.
                       </p>
-                      <div className="space-y-2 border rounded-lg p-4">
+                      <div className="space-y-3 bg-white dark:bg-gray-900 rounded-lg p-4">
                         {workLocations.map((location) => (
-                          <div key={location.id} className="flex items-center space-x-2">
+                          <div key={location.id} className="flex items-start space-x-3 p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                             <input
                               type="checkbox"
                               id={`location-${location.id}`}
@@ -745,23 +751,45 @@ export default function Funcionarios() {
                                   );
                                 }
                               }}
-                              className="h-4 w-4 rounded border-gray-300"
+                              className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
                             <Label
                               htmlFor={`location-${location.id}`}
-                              className="text-sm font-normal cursor-pointer"
+                              className="flex-1 cursor-pointer"
                             >
-                              {location.name} ({location.type})
+                              <div className="font-medium">{location.name}</div>
+                              <div className="text-sm text-muted-foreground">{location.type}</div>
                             </Label>
                           </div>
                         ))}
                       </div>
                       {selectedWorkLocations.length === 0 && (
-                        <p className="text-sm text-destructive">
-                          Selecione pelo menos um local de trabalho
-                        </p>
+                        <Alert variant="destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            Selecione pelo menos um local de trabalho para o funcionário
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      {selectedWorkLocations.length > 0 && (
+                        <Alert className="border-green-500 bg-green-50 dark:bg-green-950/20">
+                          <AlertDescription className="text-green-700 dark:text-green-400">
+                            ✓ {selectedWorkLocations.length} local(is) selecionado(s)
+                          </AlertDescription>
+                        </Alert>
                       )}
                     </div>
+                  )}
+
+                  {formData.company_id && workLocations.length === 0 && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Esta empresa ainda não possui locais de trabalho cadastrados. 
+                        <br />
+                        Acesse a página "Locais de Trabalho" para cadastrar os armazéns/filiais.
+                      </AlertDescription>
+                    </Alert>
                   )}
 
                   <div className="grid grid-cols-2 gap-4">
