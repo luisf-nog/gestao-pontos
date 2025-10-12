@@ -10,10 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { LogIn, LogOut, Clock, Key, Calendar, QrCode, MapPin, AlertCircle } from 'lucide-react';
+import { LogIn, LogOut, Clock, Key, Calendar, Coffee, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { QRScanner } from '@/components/QRScanner';
 
 interface Employee {
   id: string;
@@ -25,25 +24,10 @@ interface Employee {
   };
 }
 
-interface TodayRecord {
+interface TodayRecordExtended {
   id: string;
   entry_time: string;
   exit_time: string | null;
-}
-
-interface WorkLocation {
-  id: string;
-  name: string;
-  type: string;
-  latitude: number | null;
-  longitude: number | null;
-  radius_meters: number;
-  qr_code_token: string;
-  qr_enabled: boolean;
-  geo_enabled: boolean;
-}
-
-interface TodayRecordExtended extends TodayRecord {
   lunch_exit_time: string | null;
   lunch_return_time: string | null;
   lunch_hours?: number | null;
@@ -54,19 +38,12 @@ export default function PontoEletronico() {
   const { user } = useAuth();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [todayRecord, setTodayRecord] = useState<TodayRecordExtended | null>(null);
-  const [workLocations, setWorkLocations] = useState<WorkLocation[]>([]);
-  const [selectedLocation, setSelectedLocation] = useState<WorkLocation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [selectedSetor, setSelectedSetor] = useState<string>('');
-  const [scannedQR, setScannedQR] = useState<string>('');
-  const [showQRInput, setShowQRInput] = useState(false);
-  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [lunchExitTime, setLunchExitTime] = useState<string>('');
   const [lunchReturnTime, setLunchReturnTime] = useState<string>('');
-  const [showLunchDialog, setShowLunchDialog] = useState(false);
   const { toast } = useToast();
   const currentDate = format(new Date(), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
   const currentTime = format(new Date(), 'HH:mm');
@@ -77,155 +54,6 @@ export default function PontoEletronico() {
       fetchTodayRecord();
     }
   }, [user]);
-
-  useEffect(() => {
-    if (employee) {
-      fetchWorkLocations();
-      requestLocation();
-    }
-  }, [employee]);
-
-  const requestLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.error('Erro ao obter localização:', error);
-        }
-      );
-    }
-  };
-
-  const fetchWorkLocations = async () => {
-    if (!employee) return;
-
-    // Buscar locais autorizados para este funcionário
-    const { data: authorizedLocations } = await supabase
-      .from('employee_work_locations')
-      .select('work_location_id, work_locations(*)')
-      .eq('employee_id', employee.id);
-
-    if (authorizedLocations && authorizedLocations.length > 0) {
-      const locations = authorizedLocations.map(al => al.work_locations).filter(Boolean);
-      setWorkLocations(locations as WorkLocation[]);
-      // Não seleciona automaticamente - força o usuário a escolher após verificar a localização
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Sem locais autorizados',
-        description: 'Você não tem locais de trabalho autorizados. Entre em contato com o administrador.',
-      });
-    }
-  };
-
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371e3; // Raio da Terra em metros
-    const φ1 = lat1 * Math.PI / 180;
-    const φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180;
-    const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) *
-      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c; // Distância em metros
-  };
-
-  const validatePoint = async (): Promise<{ valid: boolean; errors: string[]; distance?: number; nearestLocation?: WorkLocation }> => {
-    const errors: string[] = [];
-    let calculatedDistance: number | undefined;
-    let nearestLocation: WorkLocation | undefined;
-
-    // ETAPA 1: Validar Geolocalização PRIMEIRO
-    if (!userLocation) {
-      errors.push('Não foi possível obter sua localização. Ative o GPS do dispositivo e tente novamente.');
-      return { valid: false, errors };
-    }
-
-    // Verificar qual local está mais próximo do usuário
-    const locationsWithDistance = workLocations.map(loc => {
-      if (!loc.latitude || !loc.longitude) return null;
-      
-      const distance = calculateDistance(
-        userLocation.latitude,
-        userLocation.longitude,
-        loc.latitude,
-        loc.longitude
-      );
-
-      return { location: loc, distance };
-    }).filter(Boolean);
-
-    if (locationsWithDistance.length === 0) {
-      errors.push('Nenhum local de trabalho configurado com coordenadas.');
-      return { valid: false, errors };
-    }
-
-    // Ordenar por distância
-    locationsWithDistance.sort((a, b) => a!.distance - b!.distance);
-    const nearest = locationsWithDistance[0]!;
-    nearestLocation = nearest.location;
-    calculatedDistance = nearest.distance;
-
-    // Verificar se está dentro do raio permitido
-    if (nearest.location.geo_enabled) {
-      if (calculatedDistance > nearest.location.radius_meters) {
-        errors.push(`Você está muito longe do local de trabalho. Aproxime-se para registrar ponto.`);
-        errors.push(`Distância atual: ${Math.round(calculatedDistance)}m do local ${nearest.location.name}`);
-        errors.push(`Distância máxima permitida: ${nearest.location.radius_meters}m`);
-        await logValidation('geolocation', 'out_of_area', null, calculatedDistance);
-        return { valid: false, errors, distance: calculatedDistance, nearestLocation };
-      }
-    }
-
-    // ETAPA 2: Validar QR Code (deve corresponder ao local detectado pela geolocalização)
-    if (nearest.location.qr_enabled) {
-      if (!scannedQR) {
-        errors.push('Escaneie o QR Code do local de trabalho para continuar.');
-        return { valid: false, errors, distance: calculatedDistance, nearestLocation };
-      }
-
-      // Verificar se o QR Code corresponde ao local detectado
-      if (scannedQR !== nearest.location.qr_code_token) {
-        errors.push('QR Code incompatível com sua localização atual.');
-        errors.push(`Você está próximo ao local: ${nearest.location.name}`);
-        errors.push('Escaneie o QR Code correto deste local.');
-        await logValidation('qr_code', 'invalid_qr_location_mismatch', scannedQR);
-        return { valid: false, errors, distance: calculatedDistance, nearestLocation };
-      }
-    }
-
-    // Validação bem-sucedida
-    setSelectedLocation(nearest.location);
-    setValidationErrors([]);
-    return { valid: true, errors: [], distance: calculatedDistance, nearestLocation };
-  };
-
-  const logValidation = async (
-    type: string,
-    status: string,
-    qrCode: string | null,
-    distance?: number
-  ) => {
-    if (!employee) return;
-
-    await supabase.from('point_validation_logs').insert([{
-      employee_id: employee.id,
-      validation_type: type,
-      validation_status: status,
-      qr_code_provided: qrCode,
-      latitude: userLocation?.latitude,
-      longitude: userLocation?.longitude,
-      distance_meters: distance,
-    }]);
-  };
 
   const fetchEmployeeData = async () => {
     if (!user) return;
@@ -243,7 +71,6 @@ export default function PontoEletronico() {
     }
 
     if (!data) {
-      // Usuário não vinculado a um funcionário: não é erro; apenas exibe tela informativa
       setIsLoading(false);
       return;
     }
@@ -277,7 +104,7 @@ export default function PontoEletronico() {
 
     const { data, error } = await supabase
       .from('time_records')
-      .select('id, entry_time, exit_time, lunch_exit_time, lunch_return_time, setor')
+      .select('id, entry_time, exit_time, lunch_exit_time, lunch_return_time, lunch_hours, setor')
       .eq('employee_id', employeeData.id)
       .eq('date', today)
       .maybeSingle();
@@ -291,22 +118,15 @@ export default function PontoEletronico() {
   };
 
   const handleEntry = async () => {
-    if (!employee || !selectedSetor || !selectedLocation) return;
-
-    // Validar QR e Geo
-    const { valid, errors, distance } = await validatePoint();
-    if (!valid) {
+    if (!employee || !selectedSetor) {
       toast({
         variant: 'destructive',
-        title: 'Validação Falhou',
-        description: errors.join('. '),
+        title: 'Erro',
+        description: 'Selecione o setor antes de registrar entrada.',
       });
       return;
     }
 
-    console.log('Ponto válido! Distância:', distance, 'metros');
-
-    // Verificar novamente se funcionário está ativo antes de registrar ponto
     const { data: activeCheck, error: checkError } = await supabase
       .from('employees')
       .select('is_active')
@@ -335,7 +155,6 @@ export default function PontoEletronico() {
         exit_time: null,
         worked_hours: 0,
         setor: selectedSetor as any,
-        work_location_id: selectedLocation.id,
       }])
       .select()
       .single();
@@ -350,16 +169,21 @@ export default function PontoEletronico() {
     }
 
     setTodayRecord(data);
-    // Limpar QR escaneado após usar
-    setScannedQR('');
     toast({
       title: 'Entrada registrada!',
-      description: `Entrada registrada às ${time} - ${selectedLocation.name}`,
+      description: `Entrada registrada às ${time}`,
     });
   };
 
   const handleLunchExit = async () => {
-    if (!todayRecord || !lunchExitTime) return;
+    if (!todayRecord || !lunchExitTime) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Informe o horário de saída para almoço.',
+      });
+      return;
+    }
 
     const { error } = await supabase
       .from('time_records')
@@ -384,7 +208,14 @@ export default function PontoEletronico() {
   };
 
   const handleLunchReturn = async () => {
-    if (!todayRecord || !lunchReturnTime) return;
+    if (!todayRecord || !lunchReturnTime) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Informe o horário de retorno do almoço.',
+      });
+      return;
+    }
 
     // Calcular tempo de almoço
     const [exitHour, exitMin] = (todayRecord.lunch_exit_time || '12:00').split(':').map(Number);
@@ -414,7 +245,7 @@ export default function PontoEletronico() {
       const extraMinutes = Math.round((lunchHours - 1) * 60);
       toast({
         title: 'Retorno do almoço registrado',
-        description: `Tempo de almoço: ${lunchHours.toFixed(2)}h. Excedente de ${extraMinutes} minutos será descontado.`,
+        description: `Tempo de almoço: ${lunchHours.toFixed(2)}h. Excedente de ${extraMinutes} minutos será descontado do salário.`,
         variant: 'destructive',
       });
     } else {
@@ -425,13 +256,11 @@ export default function PontoEletronico() {
     }
     
     setLunchReturnTime('');
-    setShowLunchDialog(false);
   };
 
   const handleExit = async () => {
     if (!employee || !todayRecord) return;
 
-    // Verificar novamente se funcionário está ativo antes de registrar saída
     const { data: activeCheck, error: checkError } = await supabase
       .from('employees')
       .select('is_active')
@@ -450,10 +279,18 @@ export default function PontoEletronico() {
     const now = new Date();
     const time = format(now, 'HH:mm');
 
-    // Calcular horas trabalhadas
+    // Calcular horas trabalhadas considerando almoço real ou padrão de 1h
     const [entryHour, entryMin] = todayRecord.entry_time.split(':').map(Number);
     const [exitHour, exitMin] = time.split(':').map(Number);
-    const workedHours = (exitHour + exitMin / 60) - (entryHour + entryMin / 60) - 1; // Descontando 1h de almoço
+    
+    let lunchBreak = 1; // Padrão: 1 hora
+    if (todayRecord.lunch_exit_time && todayRecord.lunch_return_time) {
+      const [lunchExitH, lunchExitM] = todayRecord.lunch_exit_time.split(':').map(Number);
+      const [lunchReturnH, lunchReturnM] = todayRecord.lunch_return_time.split(':').map(Number);
+      lunchBreak = (lunchReturnH + lunchReturnM / 60) - (lunchExitH + lunchExitM / 60);
+    }
+    
+    const workedHours = (exitHour + exitMin / 60) - (entryHour + entryMin / 60) - lunchBreak;
 
     const { error } = await supabase
       .from('time_records')
@@ -513,21 +350,20 @@ export default function PontoEletronico() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <p className="text-muted-foreground">Carregando...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (!employee) {
     return (
-      <div className="max-w-2xl mx-auto mt-8">
-        <Card>
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <Card className="max-w-md">
           <CardHeader>
             <CardTitle>Acesso não autorizado</CardTitle>
             <CardDescription>
-              Você não está cadastrado como funcionário no sistema.
-              Entre em contato com o administrador.
+              Você não está vinculado a um funcionário. Entre em contato com o administrador.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -535,216 +371,193 @@ export default function PontoEletronico() {
     );
   }
 
-  const hasEntryToday = !!todayRecord;
-  const hasExitToday = todayRecord?.exit_time && todayRecord.exit_time !== todayRecord.entry_time;
-
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <div>
-        <h1 className="text-3xl font-bold">Ponto Eletrônico</h1>
-        <p className="text-muted-foreground capitalize">
-          {currentDate}
-        </p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>{employee.name}</CardTitle>
-              <CardDescription>{employee.companies.name}</CardDescription>
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <Card className="border-2">
+          <CardHeader className="text-center space-y-2">
+            <div className="flex justify-center">
+              <Clock className="h-16 w-16 text-primary animate-pulse" />
             </div>
-            <Button variant="outline" size="sm" onClick={() => setIsPasswordDialogOpen(true)}>
-              <Key className="mr-2 h-4 w-4" />
-              Alterar Senha
-            </Button>
-          </div>
-        </CardHeader>
-      </Card>
-
-      <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <Clock className="h-8 w-8 text-blue-600" />
-            <div className="text-5xl font-bold text-blue-900 dark:text-blue-100">
+            <CardTitle className="text-3xl">Ponto Eletrônico</CardTitle>
+            <CardDescription className="text-lg">
+              Bem-vindo(a), <span className="font-semibold text-foreground">{employee.name}</span>
+            </CardDescription>
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <span>{currentDate}</span>
+            </div>
+            <div className="text-4xl font-bold text-primary">
               {currentTime}
             </div>
-          </div>
+          </CardHeader>
 
-          {!hasEntryToday ? (
-            <div className="text-center space-y-4">
-              <p className="text-muted-foreground mb-4">Para registrar entrada, siga os passos abaixo</p>
-              
-              <div className="space-y-4 max-w-md mx-auto">
-                {/* ETAPA 1: Verificação de Geolocalização */}
-                <Alert className={userLocation ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'border-blue-500'}>
-                  <MapPin className={`h-4 w-4 ${userLocation ? 'text-green-600' : 'text-blue-600'}`} />
+          <CardContent className="space-y-6">
+            {!todayRecord ? (
+              <div className="space-y-4">
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    <div className="font-semibold mb-1">Etapa 1: Verificação de Localização</div>
-                    {!userLocation ? (
-                      <div className="text-sm">
-                        Ative o GPS do seu dispositivo para continuar...
-                        <Button 
-                          variant="link" 
-                          size="sm" 
-                          onClick={requestLocation}
-                          className="p-0 h-auto ml-2"
-                        >
-                          Tentar novamente
-                        </Button>
-                      </div>
-                    ) : workLocations.length > 0 ? (
-                      <div className="text-sm text-green-700 dark:text-green-400">
-                        ✓ Localização obtida com sucesso!
-                        {workLocations.map(loc => {
-                          if (!loc.latitude || !loc.longitude) return null;
-                          const distance = calculateDistance(
-                            userLocation.latitude,
-                            userLocation.longitude,
-                            loc.latitude,
-                            loc.longitude
-                          );
-                          const withinRadius = distance <= loc.radius_meters;
-                          return (
-                            <div key={loc.id} className={`mt-1 ${withinRadius ? 'text-green-700 dark:text-green-400 font-medium' : 'text-muted-foreground'}`}>
-                              {withinRadius ? '✓' : '○'} {loc.name}: {Math.round(distance)}m 
-                              {withinRadius && ' (Você está no local!)'}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-green-700 dark:text-green-400">
-                        ✓ Localização obtida!
-                      </div>
-                    )}
+                    Você ainda não registrou entrada hoje. Selecione o setor e clique em "Registrar Entrada".
                   </AlertDescription>
                 </Alert>
 
-                {/* ETAPA 2: Escaneamento de QR Code (só aparece se localização OK) */}
-                {userLocation && workLocations.length > 0 && (
-                  <Alert className={scannedQR ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'border-blue-500'}>
-                    <QrCode className={`h-4 w-4 ${scannedQR ? 'text-green-600' : 'text-blue-600'}`} />
-                    <AlertDescription>
-                      <div className="font-semibold mb-2">Etapa 2: Escaneie o QR Code</div>
-                      {!scannedQR ? (
+                <div className="space-y-2">
+                  <Label>Setor</Label>
+                  <Select value={selectedSetor} onValueChange={setSelectedSetor}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o setor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LOGISTICA">LOGÍSTICA</SelectItem>
+                      <SelectItem value="QUALIDADE">QUALIDADE</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button 
+                  onClick={handleEntry} 
+                  className="w-full h-16 text-lg"
+                  disabled={!selectedSetor}
+                >
+                  <LogIn className="mr-2 h-5 w-5" />
+                  Registrar Entrada
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Entrada</p>
+                    <p className="text-2xl font-bold">{todayRecord.entry_time}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Saída</p>
+                    <p className="text-2xl font-bold">
+                      {todayRecord.exit_time || <span className="text-amber-600">Pendente</span>}
+                    </p>
+                  </div>
+                  {todayRecord.setor && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-muted-foreground">Setor</p>
+                      <Badge variant="outline" className="mt-1">{todayRecord.setor}</Badge>
+                    </div>
+                  )}
+                </div>
+
+                {/* Controle de Almoço */}
+                {!todayRecord.exit_time && (
+                  <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Coffee className="h-5 w-5" />
+                        Controle de Almoço
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {!todayRecord.lunch_exit_time ? (
                         <div className="space-y-2">
-                          <p className="text-sm">Escaneie o QR Code do local de trabalho</p>
+                          <Label>Horário de Saída para Almoço</Label>
                           <div className="flex gap-2">
                             <Input
-                              value={scannedQR}
-                              onChange={(e) => setScannedQR(e.target.value)}
-                              placeholder="Digite ou escaneie o código"
-                              className="flex-1"
+                              type="time"
+                              value={lunchExitTime}
+                              onChange={(e) => setLunchExitTime(e.target.value)}
                             />
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => setShowQRInput(!showQRInput)}
-                            >
-                              <QrCode className="h-4 w-4" />
+                            <Button onClick={handleLunchExit}>
+                              Registrar Saída
+                            </Button>
+                          </div>
+                        </div>
+                      ) : !todayRecord.lunch_return_time ? (
+                        <div className="space-y-2">
+                          <Alert>
+                            <AlertDescription>
+                              Saída para almoço: <strong>{todayRecord.lunch_exit_time}</strong>
+                            </AlertDescription>
+                          </Alert>
+                          <Label>Horário de Retorno do Almoço</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="time"
+                              value={lunchReturnTime}
+                              onChange={(e) => setLunchReturnTime(e.target.value)}
+                            />
+                            <Button onClick={handleLunchReturn}>
+                              Registrar Retorno
                             </Button>
                           </div>
                         </div>
                       ) : (
-                        <div className="text-sm text-green-700 dark:text-green-400">
-                          ✓ QR Code escaneado com sucesso!
-                          <Button 
-                            variant="link" 
-                            size="sm"
-                            onClick={() => setScannedQR('')}
-                            className="p-0 h-auto ml-2"
-                          >
-                            Escanear novamente
-                          </Button>
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm text-muted-foreground">Saída Almoço</p>
+                              <p className="text-lg font-semibold">{todayRecord.lunch_exit_time}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Retorno Almoço</p>
+                              <p className="text-lg font-semibold">{todayRecord.lunch_return_time}</p>
+                            </div>
+                          </div>
+                          {todayRecord.lunch_hours && todayRecord.lunch_hours > 1 && (
+                            <Alert variant="destructive">
+                              <AlertCircle className="h-4 w-4" />
+                              <AlertDescription>
+                                Tempo de almoço: <strong>{todayRecord.lunch_hours.toFixed(2)}h</strong>
+                                <br />
+                                Excedente de {Math.round((todayRecord.lunch_hours - 1) * 60)} minutos será descontado.
+                              </AlertDescription>
+                            </Alert>
+                          )}
                         </div>
                       )}
-                    </AlertDescription>
-                  </Alert>
+                    </CardContent>
+                  </Card>
                 )}
 
-                {/* Erros de validação */}
-                {validationErrors.length > 0 && (
-                  <Alert variant="destructive">
+                {!todayRecord.exit_time && (
+                  <Button 
+                    onClick={handleExit} 
+                    variant="destructive"
+                    className="w-full h-16 text-lg"
+                  >
+                    <LogOut className="mr-2 h-5 w-5" />
+                    Registrar Saída
+                  </Button>
+                )}
+
+                {todayRecord.exit_time && (
+                  <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      {validationErrors.map((error, i) => (
-                        <div key={i} className="mb-1">• {error}</div>
-                      ))}
+                      Ponto do dia finalizado. Até amanhã!
                     </AlertDescription>
                   </Alert>
                 )}
+              </div>
+            )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="setor" className="text-base">Selecione o Setor</Label>
-                  <Select value={selectedSetor} onValueChange={setSelectedSetor}>
-                    <SelectTrigger id="setor" className="h-12 text-lg">
-                      <SelectValue placeholder="Escolha o setor" />
-                    </SelectTrigger>
-                     <SelectContent>
-                      <SelectItem value="Qualidade">Qualidade</SelectItem>
-                      <SelectItem value="Logística">Logística</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <Button
-                  size="lg"
-                  className="w-full h-20 text-xl"
-                  onClick={handleEntry}
-                  disabled={!selectedSetor}
-                >
-                  <LogIn className="mr-2 h-6 w-6" />
-                  Registrar Entrada
-                </Button>
-              </div>
+            <div className="pt-4 border-t">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setIsPasswordDialogOpen(true)}
+              >
+                <Key className="mr-2 h-4 w-4" />
+                Alterar Senha
+              </Button>
             </div>
-          ) : !hasExitToday ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-center gap-4 p-4 bg-white/50 dark:bg-black/20 rounded-lg">
-                <Badge variant="default" className="text-base px-4 py-2">
-                  Entrada: {todayRecord.entry_time}
-                </Badge>
-              </div>
-              <div className="text-center">
-                <p className="text-muted-foreground mb-4">Entrada registrada! Registre sua saída quando terminar.</p>
-                <Button
-                  size="lg"
-                  variant="destructive"
-                  className="w-full max-w-md h-20 text-xl"
-                  onClick={handleExit}
-                >
-                  <LogOut className="mr-2 h-6 w-6" />
-                  Registrar Saída
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-center gap-4 p-4 bg-white/50 dark:bg-black/20 rounded-lg">
-                <Badge variant="default" className="text-base px-4 py-2">
-                  Entrada: {todayRecord.entry_time}
-                </Badge>
-                <Badge variant="secondary" className="text-base px-4 py-2">
-                  Saída: {todayRecord.exit_time}
-                </Badge>
-              </div>
-              <div className="text-center">
-                <p className="text-green-600 dark:text-green-400 font-semibold">
-                  ✓ Ponto do dia registrado com sucesso!
-                </p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Alterar Senha</DialogTitle>
             <DialogDescription>
-              Digite sua nova senha para acesso ao ponto eletrônico
+              Digite sua nova senha (mínimo 3 caracteres)
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -753,37 +566,22 @@ export default function PontoEletronico() {
               <Input
                 id="newPassword"
                 type="password"
-                placeholder="Digite a nova senha"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                minLength={3}
+                placeholder="Digite a nova senha"
               />
-              <p className="text-xs text-muted-foreground">
-                Mínimo 3 caracteres
-              </p>
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button type="button" onClick={handleChangePassword}>
-              Alterar Senha
+            <Button onClick={handleChangePassword}>
+              Confirmar
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {showQRInput && (
-        <QRScanner
-          onScan={(data) => {
-            setScannedQR(data);
-            setShowQRInput(false);
-            toast({ title: 'QR lido', description: 'Código capturado com sucesso.' });
-          }}
-          onClose={() => setShowQRInput(false)}
-        />
-      )}
     </div>
   );
 }

@@ -30,11 +30,47 @@ export function hoursToTimeString(hours: number): string {
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 }
 
-export function calculateWorkedHours(entryTime: string, exitTime: string, lunchBreak: number = 1): number {
+export function calculateWorkedHours(
+  entryTime: string, 
+  exitTime: string, 
+  lunchExitTime?: string | null,
+  lunchReturnTime?: string | null
+): number {
   const entry = timeStringToHours(entryTime);
   const exit = timeStringToHours(exitTime);
+  
+  // Se tem horários de almoço registrados, usa o tempo real
+  let lunchBreak = 1; // Padrão: 1 hora
+  if (lunchExitTime && lunchReturnTime) {
+    const lunchExit = timeStringToHours(lunchExitTime);
+    const lunchReturn = timeStringToHours(lunchReturnTime);
+    lunchBreak = lunchReturn - lunchExit;
+  }
+  
   const totalHours = exit - entry - lunchBreak;
   return Math.max(0, totalHours);
+}
+
+export function calculateLunchDiscount(
+  lunchExitTime: string | null,
+  lunchReturnTime: string | null,
+  dailyRate: number
+): number {
+  if (!lunchExitTime || !lunchReturnTime) return 0;
+  
+  const lunchExit = timeStringToHours(lunchExitTime);
+  const lunchReturn = timeStringToHours(lunchReturnTime);
+  const lunchHours = lunchReturn - lunchExit;
+  
+  // Se almoço > 1 hora, calcular desconto dos minutos excedentes
+  if (lunchHours > 1) {
+    const excessHours = lunchHours - 1;
+    // Assumindo jornada de 8 horas (480 minutos) para cálculo proporcional
+    const hourlyRate = dailyRate / 8;
+    return excessHours * hourlyRate;
+  }
+  
+  return 0;
 }
 
 export function getStandardHoursForDay(date: Date): number {
@@ -56,17 +92,20 @@ export function calculateDailyAndOvertimeValues(
   workedHours: number,
   date: Date,
   dailyRate: number,
-  overtimeRate: number
-): { dailyValue: number; overtimeValue: number; totalValue: number } {
+  overtimeRate: number,
+  lunchDiscount: number = 0
+): { dailyValue: number; overtimeValue: number; totalValue: number; lunchDiscount: number } {
   const standardHours = getStandardHoursForDay(date);
   
   // Se não há carga horária padrão para o dia (domingo), paga apenas hora extra
   if (standardHours === 0) {
     const overtimeValue = workedHours * overtimeRate;
+    const total = overtimeValue - lunchDiscount;
     return {
       dailyValue: 0,
       overtimeValue: overtimeValue,
-      totalValue: overtimeValue,
+      totalValue: Math.max(0, total),
+      lunchDiscount,
     };
   }
   
@@ -74,20 +113,24 @@ export function calculateDailyAndOvertimeValues(
   if (workedHours < standardHours) {
     const hourlyRate = dailyRate / standardHours;
     const proportionalDaily = hourlyRate * workedHours;
+    const total = proportionalDaily - lunchDiscount;
     return {
       dailyValue: proportionalDaily,
       overtimeValue: 0,
-      totalValue: proportionalDaily,
+      totalValue: Math.max(0, total),
+      lunchDiscount,
     };
   }
   
-  // Se cumpriu a jornada, paga diária integral + horas extras
+  // Se cumpriu a jornada, paga diária integral + horas extras - desconto almoço
   const overtimeHours = workedHours - standardHours;
   const overtimeValue = overtimeHours * overtimeRate;
+  const total = dailyRate + overtimeValue - lunchDiscount;
   
   return {
     dailyValue: dailyRate,
     overtimeValue: overtimeValue,
-    totalValue: dailyRate + overtimeValue,
+    totalValue: Math.max(0, total),
+    lunchDiscount,
   };
 }

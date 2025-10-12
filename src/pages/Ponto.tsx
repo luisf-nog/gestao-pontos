@@ -32,10 +32,14 @@ interface TimeRecord {
   date: string;
   entry_time: string;
   exit_time: string | null;
+  lunch_exit_time: string | null;
+  lunch_return_time: string | null;
+  lunch_hours: number | null;
   worked_hours: number | null;
   daily_value: number | null;
   overtime_value: number | null;
   total_value: number | null;
+  lunch_discount: number | null;
   setor: string | null;
   employees: {
     name: string;
@@ -66,6 +70,8 @@ export default function Ponto() {
     date: format(new Date(), 'yyyy-MM-dd'),
     entry_time: '08:00',
     exit_time: '',
+    lunch_exit_time: '',
+    lunch_return_time: '',
     setor: '',
   });
 
@@ -164,17 +170,34 @@ export default function Ponto() {
           daily_value: 0,
           overtime_value: 0,
           total_value: 0,
+          lunch_discount: 0,
         };
       }
 
       const [year, month, day] = record.date.split('-').map(Number);
       const recordDate = new Date(year, month - 1, day);
       
+      // Calcular desconto de almoço
+      const lunchDiscount = record.lunch_exit_time && record.lunch_return_time
+        ? (() => {
+            const lunchExit = parseFloat(record.lunch_exit_time.split(':')[0]) + parseFloat(record.lunch_exit_time.split(':')[1]) / 60;
+            const lunchReturn = parseFloat(record.lunch_return_time.split(':')[0]) + parseFloat(record.lunch_return_time.split(':')[1]) / 60;
+            const lunchHours = lunchReturn - lunchExit;
+            if (lunchHours > 1) {
+              const excessHours = lunchHours - 1;
+              const hourlyRate = record.employees.companies.daily_rate / 8;
+              return excessHours * hourlyRate;
+            }
+            return 0;
+          })()
+        : 0;
+      
       const { dailyValue, overtimeValue, totalValue } = calculateDailyAndOvertimeValues(
         record.worked_hours,
         recordDate,
         record.employees.companies.daily_rate,
-        record.employees.companies.overtime_rate
+        record.employees.companies.overtime_rate,
+        lunchDiscount
       );
 
       return {
@@ -182,6 +205,7 @@ export default function Ponto() {
         daily_value: dailyValue,
         overtime_value: overtimeValue,
         total_value: totalValue,
+        lunch_discount: lunchDiscount,
       };
     });
 
@@ -244,7 +268,12 @@ export default function Ponto() {
 
     // Calcular horas apenas se tiver saída
     const workedHours = formData.exit_time 
-      ? calculateWorkedHours(formData.entry_time, formData.exit_time)
+      ? calculateWorkedHours(
+          formData.entry_time, 
+          formData.exit_time,
+          formData.lunch_exit_time || null,
+          formData.lunch_return_time || null
+        )
       : null;
 
     // Valores serão calculados dinamicamente ao exibir
@@ -253,11 +282,14 @@ export default function Ponto() {
       date: formData.date,
       entry_time: formData.entry_time,
       exit_time: formData.exit_time || null,
+      lunch_exit_time: formData.lunch_exit_time || null,
+      lunch_return_time: formData.lunch_return_time || null,
       worked_hours: workedHours,
       setor: formData.setor || null,
       daily_value: null,
       overtime_value: null,
       total_value: null,
+      lunch_discount: null,
     };
 
     if (editingRecord) {
@@ -312,6 +344,8 @@ export default function Ponto() {
       date: record.date,
       entry_time: record.entry_time,
       exit_time: record.exit_time || '',
+      lunch_exit_time: record.lunch_exit_time || '',
+      lunch_return_time: record.lunch_return_time || '',
       setor: record.setor || '',
     });
     setIsDialogOpen(true);
@@ -348,6 +382,8 @@ export default function Ponto() {
       date: format(new Date(), 'yyyy-MM-dd'),
       entry_time: '08:00',
       exit_time: '',
+      lunch_exit_time: '',
+      lunch_return_time: '',
       setor: '',
     });
   };
@@ -369,17 +405,20 @@ export default function Ponto() {
     }
 
     const worksheetData = [
-      ['Funcionário', 'Empresa', 'Data', 'Entrada', 'Saída', 'Setor', 'Horas', 'Diária', 'Extra', 'Total'],
+      ['Funcionário', 'Empresa', 'Data', 'Entrada', 'Saída Almoço', 'Retorno Almoço', 'Saída', 'Setor', 'Horas', 'Diária', 'Extra', 'Desc. Almoço', 'Total'],
       ...timeRecords.map(record => [
         record.employees.name,
         record.employees.companies.name,
         format(new Date(record.date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR }),
         record.entry_time,
+        record.lunch_exit_time || '-',
+        record.lunch_return_time || '-',
         record.exit_time || 'Pendente',
         record.setor || '-',
         record.worked_hours?.toFixed(2).replace('.', ',') || '0,00',
         record.daily_value?.toFixed(2).replace('.', ',') || '0,00',
         record.overtime_value?.toFixed(2).replace('.', ',') || '0,00',
+        record.lunch_discount?.toFixed(2).replace('.', ',') || '0,00',
         record.total_value?.toFixed(2).replace('.', ',') || '0,00',
       ])
     ];
@@ -496,6 +535,26 @@ export default function Ponto() {
                     <p className="text-xs text-muted-foreground">Deixe em branco se ainda não saiu</p>
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="lunch_exit_time">Saída para Almoço (opcional)</Label>
+                    <Input
+                      id="lunch_exit_time"
+                      type="time"
+                      value={formData.lunch_exit_time}
+                      onChange={(e) => setFormData({ ...formData, lunch_exit_time: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lunch_return_time">Retorno do Almoço (opcional)</Label>
+                    <Input
+                      id="lunch_return_time"
+                      type="time"
+                      value={formData.lunch_return_time}
+                      onChange={(e) => setFormData({ ...formData, lunch_return_time: e.target.value })}
+                    />
+                  </div>
+                </div>
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleDialogClose}>
@@ -601,11 +660,13 @@ export default function Ponto() {
                   <TableHead>Funcionário</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Entrada</TableHead>
+                  <TableHead>Almoço</TableHead>
                   <TableHead>Saída</TableHead>
                   <TableHead>Setor</TableHead>
                   <TableHead>Horas</TableHead>
                   <TableHead>Diária</TableHead>
                   <TableHead>Extra</TableHead>
+                  <TableHead>Desc.</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -613,7 +674,7 @@ export default function Ponto() {
               <TableBody>
                 {filteredRecords.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center text-muted-foreground">
+                    <TableCell colSpan={12} className="text-center text-muted-foreground">
                       Nenhum registro encontrado
                     </TableCell>
                   </TableRow>
@@ -633,6 +694,21 @@ export default function Ponto() {
                         </TableCell>
                         <TableCell>{record.entry_time}</TableCell>
                         <TableCell>
+                          {record.lunch_exit_time && record.lunch_return_time ? (
+                            <div className="text-xs">
+                              <div>Saída: {record.lunch_exit_time}</div>
+                              <div>Retorno: {record.lunch_return_time}</div>
+                              {record.lunch_hours && record.lunch_hours > 1 && (
+                                <div className="text-red-600 font-medium">
+                                  ({record.lunch_hours.toFixed(2)}h)
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           {record.exit_time || <span className="text-amber-600">Pendente</span>}
                         </TableCell>
                         <TableCell>
@@ -648,6 +724,12 @@ export default function Ponto() {
                         </TableCell>
                         <TableCell className="text-blue-600">
                           R$ {record.overtime_value?.toFixed(2) || '0.00'}
+                        </TableCell>
+                        <TableCell className="text-red-600">
+                          {record.lunch_discount && record.lunch_discount > 0 
+                            ? `R$ ${record.lunch_discount.toFixed(2)}`
+                            : '-'
+                          }
                         </TableCell>
                         <TableCell className="font-semibold">
                           R$ {record.total_value?.toFixed(2) || '0.00'}

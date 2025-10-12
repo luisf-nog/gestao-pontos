@@ -13,19 +13,13 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Pencil, Trash2, AlertCircle, CheckCircle2, Upload, X, Search, MapPin } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertCircle, CheckCircle2, Upload, X, Search } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { generateEmployeeEmail } from '@/utils/emailGenerator';
 
 interface Company {
   id: string;
   name: string;
-}
-
-interface WorkLocation {
-  id: string;
-  name: string;
-  type: string;
 }
 
 interface Employee {
@@ -48,8 +42,6 @@ interface Employee {
 export default function Funcionarios() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [workLocations, setWorkLocations] = useState<WorkLocation[]>([]);
-  const [selectedWorkLocations, setSelectedWorkLocations] = useState<string[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [nameCheckStatus, setNameCheckStatus] = useState<'idle' | 'checking' | 'duplicate' | 'available'>('idle');
@@ -88,11 +80,6 @@ export default function Funcionarios() {
     fetchEmployees();
   }, []);
 
-  useEffect(() => {
-    if (formData.company_id) {
-      fetchWorkLocations(formData.company_id);
-    }
-  }, [formData.company_id]);
 
   const fetchCompanies = async () => {
     const { data, error } = await supabase
@@ -112,24 +99,6 @@ export default function Funcionarios() {
     setCompanies(data || []);
   };
 
-  const fetchWorkLocations = async (companyId: string) => {
-    const { data, error } = await supabase
-      .from('work_locations')
-      .select('id, name, type')
-      .eq('company_id', companyId)
-      .order('name');
-
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro ao carregar locais de trabalho',
-        description: error.message,
-      });
-      return;
-    }
-
-    setWorkLocations(data || []);
-  };
 
   const fetchEmployees = async () => {
     const { data, error } = await supabase
@@ -257,15 +226,6 @@ export default function Funcionarios() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (selectedWorkLocations.length === 0) {
-      toast({
-        variant: 'destructive',
-        title: 'Selecione pelo menos um local',
-        description: 'O funcionário precisa ter pelo menos um local de trabalho autorizado.',
-      });
-      return;
-    }
-
     if (editingEmployee) {
       // Upload da foto se houver
       let photoUrl = editingEmployee.photo_url;
@@ -306,21 +266,6 @@ export default function Funcionarios() {
         return;
       }
 
-      // Atualizar locais de trabalho autorizados
-      await supabase
-        .from('employee_work_locations')
-        .delete()
-        .eq('employee_id', editingEmployee.id);
-
-      const locationsToInsert = selectedWorkLocations.map(locationId => ({
-        employee_id: editingEmployee.id,
-        work_location_id: locationId,
-      }));
-
-      await supabase
-        .from('employee_work_locations')
-        .insert(locationsToInsert);
-
       toast({
         title: 'Funcionário atualizado!',
         description: 'Os dados foram atualizados com sucesso.',
@@ -360,16 +305,6 @@ export default function Funcionarios() {
             .eq('id', newEmployee.id);
         }
       }
-
-      // Adicionar locais de trabalho autorizados
-      const locationsToInsert = selectedWorkLocations.map(locationId => ({
-        employee_id: newEmployee.id,
-        work_location_id: locationId,
-      }));
-
-      await supabase
-        .from('employee_work_locations')
-        .insert(locationsToInsert);
 
       // Criar usuário automaticamente se email foi gerado
       if (formData.email && newEmployee) {
@@ -434,16 +369,6 @@ export default function Funcionarios() {
     setPhotoPreview(employee.photo_url);
     setPhotoFile(null);
 
-    // Carregar locais de trabalho autorizados
-    const { data: authorizedLocations } = await supabase
-      .from('employee_work_locations')
-      .select('work_location_id')
-      .eq('employee_id', employee.id);
-
-    if (authorizedLocations) {
-      setSelectedWorkLocations(authorizedLocations.map(loc => loc.work_location_id));
-    }
-
     setIsDialogOpen(true);
   };
 
@@ -487,8 +412,6 @@ export default function Funcionarios() {
     setDuplicateEmployees([]);
     setPhotoFile(null);
     setPhotoPreview(null);
-    setSelectedWorkLocations([]);
-    setWorkLocations([]);
   };
 
   const handleDialogClose = () => {
@@ -707,10 +630,7 @@ export default function Funcionarios() {
                     <Label htmlFor="company">Empresa *</Label>
                     <Select
                       value={formData.company_id}
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, company_id: value });
-                        setSelectedWorkLocations([]); // Limpar locais ao trocar empresa
-                      }}
+                      onValueChange={(value) => setFormData({ ...formData, company_id: value })}
                       required
                     >
                       <SelectTrigger>
@@ -725,72 +645,6 @@ export default function Funcionarios() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {formData.company_id && workLocations.length > 0 && (
-                    <div className="space-y-3 p-4 border-2 border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-950/20">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-5 w-5 text-blue-600" />
-                        <Label className="text-base font-semibold">Locais de Trabalho Autorizados *</Label>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Selecione os locais onde este funcionário pode bater ponto. O funcionário só conseguirá registrar ponto nos locais marcados abaixo.
-                      </p>
-                      <div className="space-y-3 bg-white dark:bg-gray-900 rounded-lg p-4">
-                        {workLocations.map((location) => (
-                          <div key={location.id} className="flex items-start space-x-3 p-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                            <input
-                              type="checkbox"
-                              id={`location-${location.id}`}
-                              checked={selectedWorkLocations.includes(location.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedWorkLocations([...selectedWorkLocations, location.id]);
-                                } else {
-                                  setSelectedWorkLocations(
-                                    selectedWorkLocations.filter((id) => id !== location.id)
-                                  );
-                                }
-                              }}
-                              className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <Label
-                              htmlFor={`location-${location.id}`}
-                              className="flex-1 cursor-pointer"
-                            >
-                              <div className="font-medium">{location.name}</div>
-                              <div className="text-sm text-muted-foreground">{location.type}</div>
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                      {selectedWorkLocations.length === 0 && (
-                        <Alert variant="destructive">
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription>
-                            Selecione pelo menos um local de trabalho para o funcionário
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                      {selectedWorkLocations.length > 0 && (
-                        <Alert className="border-green-500 bg-green-50 dark:bg-green-950/20">
-                          <AlertDescription className="text-green-700 dark:text-green-400">
-                            ✓ {selectedWorkLocations.length} local(is) selecionado(s)
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                    </div>
-                  )}
-
-                  {formData.company_id && workLocations.length === 0 && (
-                    <Alert variant="destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        Esta empresa ainda não possui locais de trabalho cadastrados. 
-                        <br />
-                        Acesse a página "Locais de Trabalho" para cadastrar os armazéns/filiais.
-                      </AlertDescription>
-                    </Alert>
-                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
