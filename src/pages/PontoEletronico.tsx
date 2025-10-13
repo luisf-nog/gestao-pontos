@@ -271,11 +271,20 @@ export default function PontoEletronico() {
     if (!employee || !todayRecord) return;
     
     // Verificar se há registro de almoço
-    if (!todayRecord.lunch_exit_time || !todayRecord.lunch_return_time) {
+    if (!todayRecord.lunch_exit_time) {
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: 'É necessário registrar a saída e retorno do almoço antes de registrar a saída.',
+        description: 'É necessário registrar a saída para o almoço antes de registrar a saída.',
+      });
+      return;
+    }
+
+    if (!todayRecord.lunch_return_time) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'É necessário registrar o retorno do almoço antes de registrar a saída.',
       });
       return;
     }

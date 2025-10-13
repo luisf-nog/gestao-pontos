@@ -662,7 +662,8 @@ export default function Ponto() {
                   <TableHead>Funcionário</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Entrada</TableHead>
-                  <TableHead>Almoço</TableHead>
+                  <TableHead>Saída Almoço</TableHead>
+                  <TableHead>Volta Almoço</TableHead>
                   <TableHead>Saída</TableHead>
                   <TableHead>Setor</TableHead>
                   <TableHead>Horas</TableHead>
@@ -676,7 +677,7 @@ export default function Ponto() {
               <TableBody>
                 {filteredRecords.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={12} className="text-center text-muted-foreground">
+                    <TableCell colSpan={13} className="text-center text-muted-foreground">
                       Nenhum registro encontrado
                     </TableCell>
                   </TableRow>
@@ -695,21 +696,8 @@ export default function Ponto() {
                           {format(new Date(record.date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
                         </TableCell>
                         <TableCell>{record.entry_time}</TableCell>
-                        <TableCell>
-                          {record.lunch_exit_time && record.lunch_return_time ? (
-                            <div className="text-xs">
-                              <div>Saída: {record.lunch_exit_time}</div>
-                              <div>Retorno: {record.lunch_return_time}</div>
-                              {record.lunch_hours && record.lunch_hours > 1 && (
-                                <div className="text-red-600 font-medium">
-                                  ({record.lunch_hours.toFixed(2)}h)
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">-</span>
-                          )}
-                        </TableCell>
+                        <TableCell>{record.lunch_exit_time || '-'}</TableCell>
+                        <TableCell>{record.lunch_return_time || '-'}</TableCell>
                         <TableCell>
                           {record.exit_time || <span className="text-amber-600">Pendente</span>}
                         </TableCell>
