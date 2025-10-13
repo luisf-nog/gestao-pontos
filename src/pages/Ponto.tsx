@@ -650,6 +650,8 @@ export default function Ponto() {
           <CardTitle>Registros de Ponto</CardTitle>
           <CardDescription>
             {filteredRecords.length} registro(s) encontrado(s) • Página {currentPage} de {Math.ceil(filteredRecords.length / itemsPerPage) || 1}
+            {' • '}
+            {filteredRecords.filter(r => r.lunch_exit_time && !r.lunch_return_time).length} almoço(s) sem retorno
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

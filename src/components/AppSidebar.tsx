@@ -1,4 +1,4 @@
-import { Home, Users, Clock, Building2, BarChart3, Upload, LogOut, Fingerprint, Settings, QrCode, MapPin } from 'lucide-react';
+import { Home, Users, Clock, Building2, BarChart3, Upload, LogOut, Fingerprint, Settings } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -27,8 +27,6 @@ const menuItems = [
   { title: 'Dashboard', url: '/dashboard', icon: Home },
   { title: 'Ponto Eletrônico', url: '/ponto-eletronico', icon: Fingerprint },
   { title: 'Controle de Ponto', url: '/ponto', icon: Clock, adminOnly: true },
-  { title: 'Locais de Trabalho', url: '/locais', icon: MapPin, adminOnly: true },
-  { title: 'QR Code', url: '/qrcode', icon: QrCode, adminOnly: true },
   { title: 'Relatórios', url: '/relatorios', icon: BarChart3, adminOnly: true },
   { title: 'Funcionários', url: '/funcionarios', icon: Users, adminOnly: true },
   { title: 'Empresas', url: '/empresas', icon: Building2, adminOnly: true },

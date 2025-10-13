@@ -118,7 +118,16 @@ export default function PontoEletronico() {
   };
 
   const handleEntry = async () => {
-    if (!employee || !selectedSetor) {
+    if (!employee) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Dados do funcionário não encontrados.',
+      });
+      return;
+    }
+    
+    if (!selectedSetor) {
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -260,6 +269,16 @@ export default function PontoEletronico() {
 
   const handleExit = async () => {
     if (!employee || !todayRecord) return;
+    
+    // Verificar se há registro de almoço
+    if (!todayRecord.lunch_exit_time || !todayRecord.lunch_return_time) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'É necessário registrar a saída e retorno do almoço antes de registrar a saída.',
+      });
+      return;
+    }
 
     const { data: activeCheck, error: checkError } = await supabase
       .from('employees')
