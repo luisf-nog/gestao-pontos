@@ -525,17 +525,18 @@ export default function Funcionarios() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="name">Nome</Label>
+                    <Label htmlFor="name">Nome (somente maiúsculas)</Label>
                     <Input
                       id="name"
-                      placeholder="Nome do funcionário"
+                      placeholder="NOME DO FUNCIONÁRIO"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value.toUpperCase() })}
                       required
                       minLength={2}
                       maxLength={100}
                       disabled={!!editingEmployee && !isDev}
                       className={editingEmployee && !isDev ? "cursor-not-allowed opacity-70" : ""}
+                      style={{ textTransform: 'uppercase' }}
                     />
                     {editingEmployee && !isDev && (
                       <p className="text-xs text-muted-foreground">

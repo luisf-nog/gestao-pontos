@@ -428,8 +428,8 @@ export default function PontoEletronico() {
                       <SelectValue placeholder="Selecione o setor" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="LOGISTICA">LOGÍSTICA</SelectItem>
-                      <SelectItem value="QUALIDADE">QUALIDADE</SelectItem>
+                      <SelectItem value="Logística">LOGÍSTICA</SelectItem>
+                      <SelectItem value="Qualidade">QUALIDADE</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

@@ -72,7 +72,7 @@ export default function Ponto() {
     exit_time: '',
     lunch_exit_time: '',
     lunch_return_time: '',
-    setor: '',
+    setor: 'Logística',
   });
 
   useEffect(() => {
@@ -508,8 +508,8 @@ export default function Ponto() {
                       <SelectValue placeholder="Selecione o setor" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="LOGISTICA">LOGÍSTICA</SelectItem>
-                      <SelectItem value="QUALIDADE">QUALIDADE</SelectItem>
+                      <SelectItem value="Logística">LOGÍSTICA</SelectItem>
+                      <SelectItem value="Qualidade">QUALIDADE</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
