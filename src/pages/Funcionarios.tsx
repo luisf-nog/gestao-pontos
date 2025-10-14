@@ -26,14 +26,13 @@ interface Employee {
   id: string;
   name: string;
   email: string | null;
-  personal_email: string | null;
   company_id: string;
   user_id: string | null;
   photo_url: string | null;
   birth_date: string | null;
   phone: string | null;
   notes: string | null;
-  is_active: boolean;
+  work_unit: ('Matriz' | 'Filial')[] | null;
   companies: {
     name: string;
   };
@@ -56,12 +55,11 @@ export default function Funcionarios() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    personal_email: '',
     company_id: '',
     birth_date: '',
     phone: '',
     notes: '',
-    is_active: true,
+    work_unit: ['Matriz'] as ('Matriz' | 'Filial')[],
   });
 
   // Gerar email automaticamente baseado no nome e empresa
@@ -234,18 +232,15 @@ export default function Funcionarios() {
         if (uploadedUrl) photoUrl = uploadedUrl;
       }
 
-      console.log('Atualizando funcionário com is_active:', formData.is_active);
-      
       const updateData = {
         name: formData.name,
         email: formData.email,
-        personal_email: formData.personal_email || null,
         company_id: formData.company_id,
         photo_url: photoUrl,
         birth_date: formData.birth_date || null,
         phone: formData.phone || null,
         notes: formData.notes || null,
-        is_active: formData.is_active,
+        work_unit: formData.work_unit,
       };
 
       console.log('Dados de atualização:', updateData);
@@ -276,12 +271,11 @@ export default function Funcionarios() {
         .insert([{
           name: formData.name,
           email: formData.email,
-          personal_email: formData.personal_email || null,
           company_id: formData.company_id,
           birth_date: formData.birth_date || null,
           phone: formData.phone || null,
           notes: formData.notes || null,
-          is_active: formData.is_active,
+          work_unit: formData.work_unit,
         }])
         .select()
         .single();
@@ -352,19 +346,15 @@ export default function Funcionarios() {
   };
 
   const handleEdit = async (employee: Employee) => {
-    console.log('Editando funcionário:', employee);
-    console.log('is_active do funcionário:', employee.is_active);
-    
     setEditingEmployee(employee);
     setFormData({
       name: employee.name,
       email: employee.email || '',
-      personal_email: employee.personal_email || '',
       company_id: employee.company_id,
       birth_date: employee.birth_date || '',
       phone: employee.phone || '',
       notes: employee.notes || '',
-      is_active: employee.is_active,
+      work_unit: employee.work_unit || ['Matriz'],
     });
     setPhotoPreview(employee.photo_url);
     setPhotoFile(null);
@@ -401,12 +391,11 @@ export default function Funcionarios() {
     setFormData({
       name: '',
       email: '',
-      personal_email: '',
       company_id: '',
       birth_date: '',
       phone: '',
       notes: '',
-      is_active: true,
+      work_unit: ['Matriz'],
     });
     setNameCheckStatus('idle');
     setDuplicateEmployees([]);
@@ -573,6 +562,7 @@ export default function Funcionarios() {
                       </Alert>
                     )}
                   </div>
+                  {/* Email corporativo - oculto temporariamente
                   <div className="space-y-2">
                     <Label htmlFor="email">Email (para acesso ao ponto eletrônico)</Label>
                     <Input
@@ -585,48 +575,8 @@ export default function Funcionarios() {
                       disabled={!!editingEmployee}
                       className={editingEmployee ? "cursor-not-allowed opacity-70" : ""}
                     />
-                    {editingEmployee ? (
-                      <p className="text-xs text-muted-foreground">
-                        O e-mail não pode ser alterado após o cadastro
-                      </p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">
-                        Email gerado automaticamente baseado no nome e empresa. Senha padrão: 123
-                      </p>
-                    )}
                   </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Switch
-                        id="is_active"
-                        checked={formData.is_active}
-                        onCheckedChange={(checked) => {
-                          console.log('Switch alterado para:', checked);
-                          setFormData({ ...formData, is_active: checked });
-                          console.log('FormData atualizado, is_active agora é:', checked);
-                        }}
-                      />
-                      <span>Funcionário Ativo</span>
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Desative para bloquear o acesso do funcionário ao sistema de ponto
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="personal_email">Email Pessoal (opcional)</Label>
-                    <Input
-                      id="personal_email"
-                      type="email"
-                      placeholder="email.pessoal@exemplo.com"
-                      value={formData.personal_email}
-                      onChange={(e) => setFormData({ ...formData, personal_email: e.target.value })}
-                      maxLength={255}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Email pessoal do funcionário para contato
-                    </p>
-                  </div>
+                  */}
                   <div className="space-y-2">
                     <Label htmlFor="company">Empresa *</Label>
                     <Select
@@ -645,6 +595,43 @@ export default function Funcionarios() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Unidade de Trabalho *</Label>
+                    <div className="flex gap-4">
+                      <Label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.work_unit.includes('Matriz')}
+                          onChange={(e) => {
+                            const newWorkUnit = e.target.checked
+                              ? [...formData.work_unit, 'Matriz']
+                              : formData.work_unit.filter(u => u !== 'Matriz');
+                            setFormData({ ...formData, work_unit: newWorkUnit as ('Matriz' | 'Filial')[] });
+                          }}
+                          className="h-4 w-4"
+                        />
+                        Matriz
+                      </Label>
+                      <Label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.work_unit.includes('Filial')}
+                          onChange={(e) => {
+                            const newWorkUnit = e.target.checked
+                              ? [...formData.work_unit, 'Filial']
+                              : formData.work_unit.filter(u => u !== 'Filial');
+                            setFormData({ ...formData, work_unit: newWorkUnit as ('Matriz' | 'Filial')[] });
+                          }}
+                          className="h-4 w-4"
+                        />
+                        Filial
+                      </Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Selecione uma ou ambas as unidades onde o funcionário trabalha
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -735,17 +722,15 @@ export default function Funcionarios() {
                 <TableHead>Nome</TableHead>
                 <TableHead>Idade</TableHead>
                 <TableHead>Telefone</TableHead>
-                <TableHead>Email Corporativo</TableHead>
-                <TableHead>Email Pessoal</TableHead>
                 <TableHead>Empresa</TableHead>
-                <TableHead>Acesso Ponto</TableHead>
+                <TableHead>Unidade</TableHead>
                 {isAdmin && <TableHead className="text-right">Ações</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredEmployees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 9 : 8} className="text-center text-muted-foreground">
+                  <TableCell colSpan={isAdmin ? 7 : 6} className="text-center text-muted-foreground">
                     {searchTerm ? 'Nenhum funcionário encontrado com esse nome' : 'Nenhum funcionário cadastrado'}
                   </TableCell>
                 </TableRow>
@@ -784,13 +769,17 @@ export default function Funcionarios() {
                       )}
                     </TableCell>
                     <TableCell>{employee.phone || '-'}</TableCell>
-                    <TableCell>{employee.email || '-'}</TableCell>
-                    <TableCell>{employee.personal_email || '-'}</TableCell>
                     <TableCell>{employee.companies.name}</TableCell>
                     <TableCell>
-                      <Badge variant={employee.user_id && employee.is_active ? 'default' : 'secondary'}>
-                        {employee.user_id && employee.is_active ? 'Ativo' : 'Inativo'}
-                      </Badge>
+                      {employee.work_unit && employee.work_unit.length > 0 ? (
+                        <div className="flex gap-1 flex-wrap">
+                          {employee.work_unit.map(unit => (
+                            <Badge key={unit} variant="outline">{unit}</Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     {isAdmin && (
                       <TableCell className="text-right">

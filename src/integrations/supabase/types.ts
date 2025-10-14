@@ -143,6 +143,7 @@ export type Database = {
           updated_at: string
           user_id: string | null
           work_location: Database["public"]["Enums"]["work_location"] | null
+          work_unit: Database["public"]["Enums"]["work_unit"][] | null
         }
         Insert: {
           birth_date?: string | null
@@ -159,6 +160,7 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           work_location?: Database["public"]["Enums"]["work_location"] | null
+          work_unit?: Database["public"]["Enums"]["work_unit"][] | null
         }
         Update: {
           birth_date?: string | null
@@ -175,6 +177,7 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           work_location?: Database["public"]["Enums"]["work_location"] | null
+          work_unit?: Database["public"]["Enums"]["work_unit"][] | null
         }
         Relationships: [
           {
@@ -429,6 +432,7 @@ export type Database = {
       app_role: "admin" | "user" | "dev"
       setor_type: "Logística" | "Qualidade"
       work_location: "Matriz" | "Filial" | "Ambas"
+      work_unit: "Matriz" | "Filial"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -559,6 +563,7 @@ export const Constants = {
       app_role: ["admin", "user", "dev"],
       setor_type: ["Logística", "Qualidade"],
       work_location: ["Matriz", "Filial", "Ambas"],
+      work_unit: ["Matriz", "Filial"],
     },
   },
 } as const

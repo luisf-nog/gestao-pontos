@@ -25,7 +25,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const menuItems = [
   { title: 'Dashboard', url: '/dashboard', icon: Home },
-  { title: 'Ponto Eletrônico', url: '/ponto-eletronico', icon: Fingerprint },
+  // { title: 'Ponto Eletrônico', url: '/ponto-eletronico', icon: Fingerprint }, // Oculto temporariamente
   { title: 'Controle de Ponto', url: '/ponto', icon: Clock, adminOnly: true },
   { title: 'Relatórios', url: '/relatorios', icon: BarChart3, adminOnly: true },
   { title: 'Funcionários', url: '/funcionarios', icon: Users, adminOnly: true },
@@ -57,14 +57,6 @@ export function AppSidebar() {
                 
                 // Outras páginas admin: admin ou dev
                 if (item.adminOnly && !hasRole('admin') && !hasRole('dev')) return null;
-                
-                // Users comuns veem apenas Ponto Eletrônico
-                const isRegularUser = !hasRole('admin') && !hasRole('dev') && !hasRole('moderator');
-                if (isRegularUser && item.url !== '/ponto-eletronico') return null;
-                
-                // Admin e dev NÃO veem Ponto Eletrônico
-                const isAdminOrDev = hasRole('admin') || hasRole('dev');
-                if (isAdminOrDev && item.url === '/ponto-eletronico') return null;
                 
                 return (
                   <SidebarMenuItem key={item.title}>
