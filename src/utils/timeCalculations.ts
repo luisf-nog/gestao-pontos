@@ -8,15 +8,15 @@ export interface DailyWorkHours {
   sunday: number;
 }
 
-// Carga horária padrão: Seg-Qui: 8h48min, Sex: 7h48min, Sáb: 4h, Dom: 0h
+// Carga horária padrão: Seg-Sex: Diária normal, Sáb: 4h, Dom: 4h (hora extra dobrada)
 export const standardWorkHours: DailyWorkHours = {
-  monday: 8.8, // 8h48min = 8.8h
-  tuesday: 8.8,
-  wednesday: 8.8,
-  thursday: 8.8,
-  friday: 7.8, // 7h48min = 7.8h (aproximadamente)
-  saturday: 4,
-  sunday: 0,
+  monday: 8, // 8 horas normais
+  tuesday: 8,
+  wednesday: 8,
+  thursday: 8,
+  friday: 8,
+  saturday: 4, // 4 horas, hora extra excede
+  sunday: 0, // Domingo: 4h hora extra dobrada (sem carga padrão)
 };
 
 export function timeStringToHours(timeString: string): number {
@@ -96,10 +96,11 @@ export function calculateDailyAndOvertimeValues(
   lunchDiscount: number = 0
 ): { dailyValue: number; overtimeValue: number; totalValue: number; lunchDiscount: number } {
   const standardHours = getStandardHoursForDay(date);
+  const dayOfWeek = date.getDay();
   
-  // Se não há carga horária padrão para o dia (domingo), paga apenas hora extra
-  if (standardHours === 0) {
-    const overtimeValue = workedHours * overtimeRate;
+  // Domingo: hora extra dobrada (sem carga padrão)
+  if (dayOfWeek === 0) {
+    const overtimeValue = workedHours * overtimeRate * 2; // Hora extra dobrada
     const total = overtimeValue - lunchDiscount;
     return {
       dailyValue: 0,
@@ -109,7 +110,37 @@ export function calculateDailyAndOvertimeValues(
     };
   }
   
-  // Se a jornada não foi cumprida, paga proporcionalmente baseado no valor da hora
+  // Sábado: 4h diária, hora extra excede
+  if (dayOfWeek === 6) {
+    if (workedHours <= standardHours) {
+      // Até 4 horas = diária proporcional
+      const hourlyRate = dailyRate / 8; // Base de cálculo em 8 horas
+      const proportionalDaily = hourlyRate * workedHours;
+      const total = proportionalDaily - lunchDiscount;
+      return {
+        dailyValue: proportionalDaily,
+        overtimeValue: 0,
+        totalValue: Math.max(0, total),
+        lunchDiscount,
+      };
+    } else {
+      // Acima de 4 horas = diária de 4h + hora extra excedente
+      const hourlyRate = dailyRate / 8;
+      const saturdayDaily = hourlyRate * 4;
+      const overtimeHours = workedHours - standardHours;
+      const overtimeValue = overtimeHours * overtimeRate;
+      const total = saturdayDaily + overtimeValue - lunchDiscount;
+      return {
+        dailyValue: saturdayDaily,
+        overtimeValue: overtimeValue,
+        totalValue: Math.max(0, total),
+        lunchDiscount,
+      };
+    }
+  }
+  
+  // Segunda a Sexta: diária normal
+  // Se a jornada não foi cumprida, paga proporcionalmente
   if (workedHours < standardHours) {
     const hourlyRate = dailyRate / standardHours;
     const proportionalDaily = hourlyRate * workedHours;
@@ -122,7 +153,7 @@ export function calculateDailyAndOvertimeValues(
     };
   }
   
-  // Se cumpriu a jornada, paga diária integral + horas extras - desconto almoço
+  // Se cumpriu a jornada, paga diária integral + horas extras
   const overtimeHours = workedHours - standardHours;
   const overtimeValue = overtimeHours * overtimeRate;
   const total = dailyRate + overtimeValue - lunchDiscount;

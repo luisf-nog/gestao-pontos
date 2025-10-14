@@ -21,6 +21,12 @@ interface SectorCost {
   count: number;
 }
 
+interface WorkUnitCost {
+  unit: string;
+  total: number;
+  count: number;
+}
+
 interface RecentRecord {
   id: string;
   date: string;
@@ -45,6 +51,7 @@ export default function Dashboard() {
   const [monthlyDailyTotal, setMonthlyDailyTotal] = useState(0);
   const [monthlyOvertimeTotal, setMonthlyOvertimeTotal] = useState(0);
   const [sectorCosts, setSectorCosts] = useState<SectorCost[]>([]);
+  const [workUnitCosts, setWorkUnitCosts] = useState<WorkUnitCost[]>([]);
   const [prevMonthTotal, setPrevMonthTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +68,8 @@ export default function Dashboard() {
       setError(null);
       await Promise.all([
         fetchDashboardData(),
-        fetchSectorCosts()
+        fetchSectorCosts(),
+        fetchWorkUnitCosts()
       ]);
     } catch (err: any) {
       console.error('Erro ao carregar dados do dashboard:', err);
@@ -175,6 +183,45 @@ export default function Dashboard() {
       }, {});
 
       setSectorCosts(Object.values(costs));
+    }
+  };
+
+  const fetchWorkUnitCosts = async () => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    const { data: records, error } = await supabase
+      .from('time_records')
+      .select('employee_id, total_value')
+      .gte('date', format(startOfMonth, 'yyyy-MM-dd'))
+      .lte('date', format(endOfMonth, 'yyyy-MM-dd'));
+
+    if (error) throw error;
+
+    if (records) {
+      const { data: employees, error: empError } = await supabase
+        .from('employees')
+        .select('id, work_unit');
+
+      if (empError) throw empError;
+
+      const costs: { [key: string]: { unit: string; total: number; count: number } } = {};
+
+      records.forEach((record: any) => {
+        const employee = employees?.find(e => e.id === record.employee_id);
+        if (employee && employee.work_unit) {
+          employee.work_unit.forEach((unit: string) => {
+            if (!costs[unit]) {
+              costs[unit] = { unit, total: 0, count: 0 };
+            }
+            costs[unit].total += (record.total_value || 0) / employee.work_unit.length;
+            costs[unit].count += 1 / employee.work_unit.length;
+          });
+        }
+      });
+
+      setWorkUnitCosts(Object.values(costs));
     }
   };
 
@@ -293,7 +340,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -324,6 +371,42 @@ export default function Dashboard() {
                 <p className="text-xs text-muted-foreground">{previousMonth}</p>
                 <p className="text-sm font-semibold">R$ {prevMonthTotal.toFixed(2)}</p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Custos por Unidade
+            </CardTitle>
+            <CardDescription>Distribuição mensal</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {workUnitCosts.length === 0 ? (
+                <p className="text-muted-foreground text-sm">
+                  Nenhum dado disponível
+                </p>
+              ) : (
+                workUnitCosts.map((unitCost) => (
+                  <div
+                    key={unitCost.unit}
+                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/40"
+                  >
+                    <div>
+                      <p className="font-medium text-sm">{unitCost.unit}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {Math.round(unitCost.count)} registro(s)
+                      </p>
+                    </div>
+                    <span className="font-semibold text-sm">
+                      R$ {unitCost.total.toFixed(2)}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

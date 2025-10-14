@@ -26,6 +26,7 @@ interface Employee {
   id: string;
   name: string;
   email: string | null;
+  cpf: string | null;
   company_id: string;
   user_id: string | null;
   photo_url: string | null;
@@ -55,6 +56,7 @@ export default function Funcionarios() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    cpf: '',
     company_id: '',
     birth_date: '',
     phone: '',
@@ -235,6 +237,7 @@ export default function Funcionarios() {
       const updateData = {
         name: formData.name,
         email: formData.email,
+        cpf: formData.cpf || null,
         company_id: formData.company_id,
         photo_url: photoUrl,
         birth_date: formData.birth_date || null,
@@ -271,6 +274,7 @@ export default function Funcionarios() {
         .insert([{
           name: formData.name,
           email: formData.email,
+          cpf: formData.cpf || null,
           company_id: formData.company_id,
           birth_date: formData.birth_date || null,
           phone: formData.phone || null,
@@ -350,6 +354,7 @@ export default function Funcionarios() {
     setFormData({
       name: employee.name,
       email: employee.email || '',
+      cpf: employee.cpf || '',
       company_id: employee.company_id,
       birth_date: employee.birth_date || '',
       phone: employee.phone || '',
@@ -391,6 +396,7 @@ export default function Funcionarios() {
     setFormData({
       name: '',
       email: '',
+      cpf: '',
       company_id: '',
       birth_date: '',
       phone: '',
@@ -634,6 +640,24 @@ export default function Funcionarios() {
                     </p>
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="cpf">CPF (opcional)</Label>
+                    <Input
+                      id="cpf"
+                      placeholder="000.000.000-00"
+                      value={formData.cpf}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        let formatted = value;
+                        if (value.length > 3) formatted = value.slice(0, 3) + '.' + value.slice(3);
+                        if (value.length > 6) formatted = value.slice(0, 3) + '.' + value.slice(3, 6) + '.' + value.slice(6);
+                        if (value.length > 9) formatted = value.slice(0, 3) + '.' + value.slice(3, 6) + '.' + value.slice(6, 9) + '-' + value.slice(9, 11);
+                        setFormData({ ...formData, cpf: formatted });
+                      }}
+                      maxLength={14}
+                    />
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="birth_date">Data de Nascimento (opcional)</Label>
@@ -720,6 +744,7 @@ export default function Funcionarios() {
               <TableRow>
                 <TableHead className="w-12"></TableHead>
                 <TableHead>Nome</TableHead>
+                <TableHead>CPF</TableHead>
                 <TableHead>Idade</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Empresa</TableHead>
@@ -730,7 +755,7 @@ export default function Funcionarios() {
             <TableBody>
               {filteredEmployees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 7 : 6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground">
                     {searchTerm ? 'Nenhum funcionário encontrado com esse nome' : 'Nenhum funcionário cadastrado'}
                   </TableCell>
                 </TableRow>
@@ -755,6 +780,9 @@ export default function Funcionarios() {
                           {employee.notes}
                         </div>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      {employee.cpf || <span className="text-muted-foreground">-</span>}
                     </TableCell>
                     <TableCell>
                       {employee.birth_date ? (
