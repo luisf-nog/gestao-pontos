@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -66,6 +66,7 @@ export default function Dashboard() {
     try {
       setLoading(true);
       setError(null);
+      // Parallel data fetching for better performance
       await Promise.all([
         fetchDashboardData(),
         fetchSectorCosts(),
@@ -78,6 +79,12 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+
+  // Memoize calculations
+  const percentageChange = useMemo(() => {
+    if (prevMonthTotal === 0) return 0;
+    return ((stats.monthTotal - prevMonthTotal) / prevMonthTotal) * 100;
+  }, [stats.monthTotal, prevMonthTotal]);
 
   const fetchDashboardData = async () => {
     // Buscar total de funcionários

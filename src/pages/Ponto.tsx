@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,10 +80,20 @@ export default function Ponto() {
     fetchTimeRecords();
   }, []);
 
+  // Debounce search term for better performance
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     filterRecords();
-    setCurrentPage(1); // Reset to first page when filters change
-  }, [timeRecords, searchTerm, selectedEmployee, startDate, endDate]);
+    setCurrentPage(1);
+  }, [timeRecords, debouncedSearchTerm, selectedEmployee, startDate, endDate]);
 
   const setQuickFilter = (filter: 'week' | 'lastWeek' | 'fortnight' | 'lastFortnight' | 'month') => {
     const now = new Date();
@@ -213,12 +223,12 @@ export default function Ponto() {
     setTimeRecords(recordsWithCalculatedValues);
   };
 
-  const filterRecords = () => {
+  const filterRecords = useCallback(() => {
     let filtered = [...timeRecords];
 
-    if (searchTerm) {
+    if (debouncedSearchTerm) {
       filtered = filtered.filter(record =>
-        record.employees.name.toLowerCase().includes(searchTerm.toLowerCase())
+        record.employees.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
       );
     }
 
@@ -235,9 +245,9 @@ export default function Ponto() {
     }
 
     setFilteredRecords(filtered);
-  };
+  }, [timeRecords, debouncedSearchTerm, selectedEmployee, startDate, endDate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
     const employee = employees.find(emp => emp.id === formData.employee_id);
@@ -335,7 +345,7 @@ export default function Ponto() {
     setEditingRecord(null);
     resetForm();
     fetchTimeRecords();
-  };
+  }, [formData, employees, editingRecord, toast]);
 
   const handleEdit = (record: TimeRecord) => {
     setEditingRecord(record);
