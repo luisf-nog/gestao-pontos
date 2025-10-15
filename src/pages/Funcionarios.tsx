@@ -22,12 +22,20 @@ interface Company {
   name: string;
 }
 
+interface JobPosition {
+  id: string;
+  name: string;
+  daily_rate: number;
+  overtime_rate: number;
+}
+
 interface Employee {
   id: string;
   name: string;
   email: string | null;
   cpf: string | null;
   company_id: string;
+  position_id: string | null;
   user_id: string | null;
   photo_url: string | null;
   birth_date: string | null;
@@ -37,11 +45,17 @@ interface Employee {
   companies: {
     name: string;
   };
+  job_positions?: {
+    name: string;
+    daily_rate: number;
+    overtime_rate: number;
+  } | null;
 }
 
 export default function Funcionarios() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [jobPositions, setJobPositions] = useState<JobPosition[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [nameCheckStatus, setNameCheckStatus] = useState<'idle' | 'checking' | 'duplicate' | 'available'>('idle');
@@ -58,6 +72,7 @@ export default function Funcionarios() {
     email: '',
     cpf: '',
     company_id: '',
+    position_id: '',
     birth_date: '',
     phone: '',
     notes: '',
@@ -74,6 +89,16 @@ export default function Funcionarios() {
       }
     }
   }, [formData.name, formData.company_id, companies, editingEmployee]);
+
+  // Buscar cargos quando empresa é selecionada
+  useEffect(() => {
+    if (formData.company_id) {
+      fetchJobPositions(formData.company_id);
+    } else {
+      setJobPositions([]);
+      setFormData(prev => ({ ...prev, position_id: '' }));
+    }
+  }, [formData.company_id]);
 
   useEffect(() => {
     fetchCompanies();
@@ -100,10 +125,29 @@ export default function Funcionarios() {
   };
 
 
+  const fetchJobPositions = async (companyId: string) => {
+    const { data, error } = await supabase
+      .from('job_positions')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('name');
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao carregar cargos',
+        description: error.message,
+      });
+      return;
+    }
+
+    setJobPositions(data || []);
+  };
+
   const fetchEmployees = async () => {
     const { data, error } = await supabase
       .from('employees')
-      .select('*, companies(name)')
+      .select('*, companies(name), job_positions(name, daily_rate, overtime_rate)')
       .order('name');
 
     if (error) {
@@ -239,6 +283,7 @@ export default function Funcionarios() {
         email: formData.email,
         cpf: formData.cpf || null,
         company_id: formData.company_id,
+        position_id: formData.position_id || null,
         photo_url: photoUrl,
         birth_date: formData.birth_date || null,
         phone: formData.phone || null,
@@ -276,6 +321,7 @@ export default function Funcionarios() {
           email: formData.email,
           cpf: formData.cpf || null,
           company_id: formData.company_id,
+          position_id: formData.position_id || null,
           birth_date: formData.birth_date || null,
           phone: formData.phone || null,
           notes: formData.notes || null,
@@ -356,6 +402,7 @@ export default function Funcionarios() {
       email: employee.email || '',
       cpf: employee.cpf || '',
       company_id: employee.company_id,
+      position_id: employee.position_id || '',
       birth_date: employee.birth_date || '',
       phone: employee.phone || '',
       notes: employee.notes || '',
@@ -398,6 +445,7 @@ export default function Funcionarios() {
       email: '',
       cpf: '',
       company_id: '',
+      position_id: '',
       birth_date: '',
       phone: '',
       notes: '',
@@ -604,6 +652,41 @@ export default function Funcionarios() {
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="position">Cargo *</Label>
+                    <Select
+                      value={formData.position_id}
+                      onValueChange={(value) => setFormData({ ...formData, position_id: value })}
+                      required
+                      disabled={!formData.company_id}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={
+                          !formData.company_id 
+                            ? "Selecione uma empresa primeiro" 
+                            : jobPositions.length === 0 
+                              ? "Nenhum cargo cadastrado para esta empresa"
+                              : "Selecione um cargo"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {jobPositions.map((position) => (
+                          <SelectItem key={position.id} value={position.id}>
+                            {position.name} (R$ {position.daily_rate.toFixed(2)})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {formData.company_id && jobPositions.length === 0 && (
+                      <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+                        <AlertCircle className="h-4 w-4 text-amber-600" />
+                        <AlertDescription className="text-amber-700 dark:text-amber-400">
+                          Esta empresa não possui cargos cadastrados. Cadastre um cargo na página de Empresas antes de continuar.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
                     <Label>Unidade de Trabalho *</Label>
                     <div className="flex gap-4">
                       <Label className="flex items-center gap-2 cursor-pointer">
@@ -748,6 +831,7 @@ export default function Funcionarios() {
                 <TableHead>Idade</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Empresa</TableHead>
+                <TableHead>Cargo</TableHead>
                 <TableHead>Unidade</TableHead>
                 {isAdmin && <TableHead className="text-right">Ações</TableHead>}
               </TableRow>
@@ -755,7 +839,7 @@ export default function Funcionarios() {
             <TableBody>
               {filteredEmployees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={isAdmin ? 9 : 8} className="text-center text-muted-foreground">
                     {searchTerm ? 'Nenhum funcionário encontrado com esse nome' : 'Nenhum funcionário cadastrado'}
                   </TableCell>
                 </TableRow>
@@ -798,6 +882,19 @@ export default function Funcionarios() {
                     </TableCell>
                     <TableCell>{employee.phone || '-'}</TableCell>
                     <TableCell>{employee.companies.name}</TableCell>
+                    <TableCell>
+                      {employee.job_positions ? (
+                        <div>
+                          <div className="font-medium">{employee.job_positions.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Diária: R$ {employee.job_positions.daily_rate.toFixed(2)} | 
+                            HE: R$ {employee.job_positions.overtime_rate.toFixed(2)}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">Sem cargo</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {employee.work_unit && employee.work_unit.length > 0 ? (
                         <div className="flex gap-1 flex-wrap">

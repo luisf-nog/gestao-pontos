@@ -8,7 +8,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import JobPositionManager from '@/components/JobPositionManager';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Company {
   id: string;
@@ -21,6 +23,7 @@ export default function Empresas() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { hasRole } = useAuth();
 
@@ -157,13 +160,23 @@ export default function Empresas() {
 
   const isDev = hasRole('dev');
 
+  const toggleCompany = (companyId: string) => {
+    const newExpanded = new Set(expandedCompanies);
+    if (newExpanded.has(companyId)) {
+      newExpanded.delete(companyId);
+    } else {
+      newExpanded.add(companyId);
+    }
+    setExpandedCompanies(newExpanded);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Empresas</h1>
           <p className="text-muted-foreground">
-            Gerencie as empresas terceirizadas e seus valores
+            Gerencie as empresas terceirizadas, seus valores e cargos
           </p>
         </div>
         {isDev && (
@@ -196,7 +209,7 @@ export default function Empresas() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="daily_rate">Valor da Diária (R$)</Label>
+                  <Label htmlFor="daily_rate">Valor da Diária Padrão (R$)</Label>
                   <Input
                     id="daily_rate"
                     type="number"
@@ -206,9 +219,12 @@ export default function Empresas() {
                     onChange={(e) => setFormData({ ...formData, daily_rate: e.target.value })}
                     required
                   />
+                  <p className="text-sm text-muted-foreground">
+                    Valor padrão. Pode ser diferente por cargo.
+                  </p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="overtime_rate">Valor Hora Extra (R$)</Label>
+                  <Label htmlFor="overtime_rate">Valor Hora Extra Padrão (R$)</Label>
                   <Input
                     id="overtime_rate"
                     type="number"
@@ -218,6 +234,9 @@ export default function Empresas() {
                     onChange={(e) => setFormData({ ...formData, overtime_rate: e.target.value })}
                     required
                   />
+                  <p className="text-sm text-muted-foreground">
+                    Valor padrão. Pode ser diferente por cargo.
+                  </p>
                 </div>
               </div>
               <DialogFooter>
@@ -234,63 +253,79 @@ export default function Empresas() {
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Empresas</CardTitle>
-          <CardDescription>
-            {companies.length} empresa(s) cadastrada(s)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Valor da Diária</TableHead>
-                <TableHead>Valor Hora Extra</TableHead>
-                {isDev && <TableHead className="text-right">Ações</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {companies.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={isDev ? 4 : 3} className="text-center text-muted-foreground">
-                    Nenhuma empresa cadastrada
-                  </TableCell>
-                </TableRow>
-              ) : (
-                companies.map((company) => (
-                  <TableRow key={company.id}>
-                    <TableCell className="font-medium">{company.name}</TableCell>
-                    <TableCell>R$ {company.daily_rate.toFixed(2)}</TableCell>
-                    <TableCell>R$ {company.overtime_rate.toFixed(2)}</TableCell>
-                    {isDev && (
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(company)}
-                          >
-                            <Pencil className="h-4 w-4" />
+      <div className="space-y-4">
+        {companies.length === 0 ? (
+          <Card>
+            <CardContent className="py-8">
+              <p className="text-center text-muted-foreground">
+                Nenhuma empresa cadastrada
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          companies.map((company) => (
+            <Collapsible
+              key={company.id}
+              open={expandedCompanies.has(company.id)}
+              onOpenChange={() => toggleCompany(company.id)}
+            >
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            {expandedCompanies.has(company.id) ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(company.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        </CollapsibleTrigger>
+                        <div>
+                          <CardTitle>{company.name}</CardTitle>
+                          <CardDescription>
+                            Diária padrão: R$ {company.daily_rate.toFixed(2)} | 
+                            Hora Extra padrão: R$ {company.overtime_rate.toFixed(2)}
+                          </CardDescription>
                         </div>
-                      </TableCell>
+                      </div>
+                    </div>
+                    {isDev && (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(company)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(company.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     )}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                  </div>
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent>
+                    <JobPositionManager 
+                      companyId={company.id} 
+                      companyName={company.name}
+                      isDev={isDev}
+                    />
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          ))
+        )}
+      </div>
     </div>
   );
 }

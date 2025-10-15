@@ -141,6 +141,7 @@ export type Database = {
           personal_email: string | null
           phone: string | null
           photo_url: string | null
+          position_id: string | null
           updated_at: string
           user_id: string | null
           work_location: Database["public"]["Enums"]["work_location"] | null
@@ -159,6 +160,7 @@ export type Database = {
           personal_email?: string | null
           phone?: string | null
           photo_url?: string | null
+          position_id?: string | null
           updated_at?: string
           user_id?: string | null
           work_location?: Database["public"]["Enums"]["work_location"] | null
@@ -177,6 +179,7 @@ export type Database = {
           personal_email?: string | null
           phone?: string | null
           photo_url?: string | null
+          position_id?: string | null
           updated_at?: string
           user_id?: string | null
           work_location?: Database["public"]["Enums"]["work_location"] | null
@@ -185,6 +188,51 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "employees_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "job_positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_positions: {
+        Row: {
+          company_id: string
+          created_at: string
+          daily_rate: number
+          id: string
+          name: string
+          overtime_rate: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          daily_rate: number
+          id?: string
+          name: string
+          overtime_rate: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          daily_rate?: number
+          id?: string
+          name?: string
+          overtime_rate?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_positions_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
