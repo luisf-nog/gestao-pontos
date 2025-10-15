@@ -8,15 +8,15 @@ export interface DailyWorkHours {
   sunday: number;
 }
 
-// Carga horária padrão: Seg-Sex: Diária normal, Sáb: 4h, Dom: 4h (hora extra dobrada)
+// Carga horária padrão: Seg-Qui: 8h48m, Sex: 7h48m, Sáb: 4h, Dom: 4h diária + extra dobrada
 export const standardWorkHours: DailyWorkHours = {
-  monday: 8, // 8 horas normais
-  tuesday: 8,
-  wednesday: 8,
-  thursday: 8,
-  friday: 8,
+  monday: 8.8, // 8h48m
+  tuesday: 8.8, // 8h48m
+  wednesday: 8.8, // 8h48m
+  thursday: 8.8, // 8h48m
+  friday: 7.8, // 7h48m
   saturday: 4, // 4 horas, hora extra excede
-  sunday: 0, // Domingo: 4h hora extra dobrada (sem carga padrão)
+  sunday: 4, // 4 horas diária, excedente hora extra dobrada
 };
 
 export function timeStringToHours(timeString: string): number {
@@ -98,16 +98,33 @@ export function calculateDailyAndOvertimeValues(
   const standardHours = getStandardHoursForDay(date);
   const dayOfWeek = date.getDay();
   
-  // Domingo: hora extra dobrada (sem carga padrão)
+  // Domingo: 4h diária, excedente hora extra dobrada
   if (dayOfWeek === 0) {
-    const overtimeValue = workedHours * overtimeRate * 2; // Hora extra dobrada
-    const total = overtimeValue - lunchDiscount;
-    return {
-      dailyValue: 0,
-      overtimeValue: overtimeValue,
-      totalValue: Math.max(0, total),
-      lunchDiscount,
-    };
+    if (workedHours <= standardHours) {
+      // Até 4 horas = diária proporcional
+      const hourlyRate = dailyRate / 8; // Base de cálculo em 8 horas
+      const proportionalDaily = hourlyRate * workedHours;
+      const total = proportionalDaily - lunchDiscount;
+      return {
+        dailyValue: proportionalDaily,
+        overtimeValue: 0,
+        totalValue: Math.max(0, total),
+        lunchDiscount,
+      };
+    } else {
+      // Acima de 4 horas = diária de 4h + hora extra dobrada excedente
+      const hourlyRate = dailyRate / 8;
+      const sundayDaily = hourlyRate * 4;
+      const overtimeHours = workedHours - standardHours;
+      const overtimeValue = overtimeHours * overtimeRate * 2; // Hora extra dobrada
+      const total = sundayDaily + overtimeValue - lunchDiscount;
+      return {
+        dailyValue: sundayDaily,
+        overtimeValue: overtimeValue,
+        totalValue: Math.max(0, total),
+        lunchDiscount,
+      };
+    }
   }
   
   // Sábado: 4h diária, hora extra excede
