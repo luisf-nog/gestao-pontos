@@ -21,9 +21,12 @@ interface Employee {
   company_id: string;
   companies: {
     name: string;
+  };
+  job_positions: {
+    name: string;
     daily_rate: number;
     overtime_rate: number;
-  };
+  } | null;
 }
 
 interface TimeRecord {
@@ -45,9 +48,12 @@ interface TimeRecord {
     name: string;
     companies: {
       name: string;
+    };
+    job_positions: {
+      name: string;
       daily_rate: number;
       overtime_rate: number;
-    };
+    } | null;
   };
 }
 
@@ -138,7 +144,7 @@ export default function Ponto() {
   const fetchEmployees = async () => {
     const { data, error } = await supabase
       .from('employees')
-      .select('*, companies(name, daily_rate, overtime_rate)')
+      .select('*, companies(name), job_positions(name, daily_rate, overtime_rate)')
       .eq('is_active', true)  // Apenas funcionários ativos
       .order('name');
 
@@ -157,7 +163,7 @@ export default function Ponto() {
   const fetchTimeRecords = async () => {
     const { data, error } = await supabase
       .from('time_records')
-      .select('*, employees(name, companies(name, daily_rate, overtime_rate))')
+      .select('*, employees(name, companies(name), job_positions(name, daily_rate, overtime_rate))')
       .order('date', { ascending: false })
       .order('entry_time', { ascending: false });
 
@@ -171,7 +177,7 @@ export default function Ponto() {
       return;
     }
 
-    // Calcular valores dinamicamente com base nos valores atuais da empresa
+    // Calcular valores dinamicamente com base nos valores do cargo do funcionário
     const recordsWithCalculatedValues = (data || []).map((record: any) => {
       // Se não tem saída ainda, retorna valores zerados
       if (!record.exit_time || !record.worked_hours) {
@@ -184,8 +190,23 @@ export default function Ponto() {
         };
       }
 
+      // Se não tem cargo vinculado, retorna valores zerados
+      if (!record.employees.job_positions) {
+        return {
+          ...record,
+          daily_value: 0,
+          overtime_value: 0,
+          total_value: 0,
+          lunch_discount: 0,
+        };
+      }
+
       const [year, month, day] = record.date.split('-').map(Number);
       const recordDate = new Date(year, month - 1, day);
+      
+      // Usar valores do cargo vinculado ao funcionário
+      const dailyRate = record.employees.job_positions.daily_rate;
+      const overtimeRate = record.employees.job_positions.overtime_rate;
       
       // Calcular desconto de almoço
       const lunchDiscount = record.lunch_exit_time && record.lunch_return_time
@@ -195,7 +216,7 @@ export default function Ponto() {
             const lunchHours = lunchReturn - lunchExit;
             if (lunchHours > 1) {
               const excessHours = lunchHours - 1;
-              const hourlyRate = record.employees.companies.daily_rate / 8;
+              const hourlyRate = dailyRate / 8;
               return excessHours * hourlyRate;
             }
             return 0;
@@ -205,8 +226,8 @@ export default function Ponto() {
       const { dailyValue, overtimeValue, totalValue } = calculateDailyAndOvertimeValues(
         record.worked_hours,
         recordDate,
-        record.employees.companies.daily_rate,
-        record.employees.companies.overtime_rate,
+        dailyRate,
+        overtimeRate,
         lunchDiscount
       );
 
