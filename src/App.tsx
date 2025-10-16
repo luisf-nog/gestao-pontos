@@ -60,6 +60,12 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
     return <Navigate to="/ponto-eletronico" replace />;
   }
   
+  // Redirecionar inputers apenas para /ponto
+  const isInputer = hasRole('inputer');
+  if (isInputer && window.location.pathname !== '/ponto' && window.location.pathname !== '/settings') {
+    return <Navigate to="/ponto" replace />;
+  }
+  
   // Redirecionar admin/dev que tentarem acessar ponto eletrônico
   const isAdminOrDev = hasRole('admin') || hasRole('dev');
   if (isAdminOrDev && window.location.pathname === '/ponto-eletronico') {
@@ -121,7 +127,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/dashboard" element={<ProtectedLayout><AdminRoute><Dashboard /></AdminRoute></ProtectedLayout>} />
-                <Route path="/ponto" element={<ProtectedLayout><AdminRoute><Ponto /></AdminRoute></ProtectedLayout>} />
+                <Route path="/ponto" element={<ProtectedLayout><Ponto /></ProtectedLayout>} />
                 <Route path="/ponto-eletronico" element={<ProtectedLayout><PontoEletronico /></ProtectedLayout>} />
                 <Route path="/relatorios" element={<ProtectedLayout><AdminRoute><Relatorios /></AdminRoute></ProtectedLayout>} />
                 <Route path="/funcionarios" element={<ProtectedLayout><AdminRoute><Funcionarios /></AdminRoute></ProtectedLayout>} />

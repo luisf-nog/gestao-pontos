@@ -1,16 +1,20 @@
 import { useState } from 'react';
+import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Download } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { calculateWorkedHours, calculateDailyAndOvertimeValues } from '@/utils/timeCalculations';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ImportResult {
   companies: number;
@@ -24,6 +28,7 @@ export default function ImportarDados() {
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [importType, setImportType] = useState<'csv' | 'excel'>('excel');
   const { toast } = useToast();
   const { hasRole } = useAuth();
   const navigate = useNavigate();
@@ -46,16 +51,41 @@ export default function ImportarDados() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    if (selectedFile && selectedFile.type === 'text/csv') {
+    if (!selectedFile) return;
+
+    const validTypes = importType === 'csv' 
+      ? ['text/csv'] 
+      : ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
+    
+    if (validTypes.includes(selectedFile.type) || selectedFile.name.endsWith('.xlsx') || selectedFile.name.endsWith('.xls') || selectedFile.name.endsWith('.csv')) {
       setFile(selectedFile);
       setResult(null);
     } else {
       toast({
         variant: 'destructive',
         title: 'Arquivo inválido',
-        description: 'Por favor, selecione um arquivo CSV.',
+        description: `Por favor, selecione um arquivo ${importType === 'csv' ? 'CSV' : 'Excel'}.`,
       });
     }
+  };
+
+  const downloadTemplate = () => {
+    const templateData = [
+      ['EMPRESA', 'DATA', 'NOME', 'ENTRADA', 'SAÍDA', 'SAÍDA ALMOÇO', 'VOLTA ALMOÇO', 'SETOR'],
+      ['AVANT', '15/10/2025', 'JOÃO DA SILVA', '08:00:00', '18:00:00', '12:00:00', '13:00:00', 'Logística'],
+      ['AVANT', '16/10/2025', 'MARIA SANTOS', '08:00:00', '17:30:00', '12:00:00', '13:00:00', 'Qualidade'],
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(templateData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Modelo');
+
+    XLSX.writeFile(workbook, `modelo-importacao-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+
+    toast({
+      title: 'Modelo baixado!',
+      description: 'Use este arquivo como referência para importação.',
+    });
   };
 
   const processImport = async () => {
@@ -66,12 +96,24 @@ export default function ImportarDados() {
     const errors: string[] = [];
     
     try {
-      // Read file content
-      const text = await file.text();
-      const lines = text.split('\n').filter(line => line.trim());
+      let dataLines: string[][] = [];
       
-      // Skip header
-      const dataLines = lines.slice(1);
+      if (importType === 'excel') {
+        // Processar Excel
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
+        
+        // Skip header
+        dataLines = jsonData.slice(1).filter(line => line && line.length > 0);
+      } else {
+        // Processar CSV
+        const text = await file.text();
+        const lines = text.split('\n').filter(line => line.trim());
+        dataLines = lines.slice(1).map(line => parseCSVLine(line));
+      }
       
       // Extract unique companies and employees
       const companiesMap = new Map<string, { name: string; daily_rate: number; overtime_rate: number }>();
@@ -81,7 +123,7 @@ export default function ImportarDados() {
       // First pass: collect unique companies and employees
       dataLines.forEach((line, index) => {
         try {
-          const [company, date, employee, entry, exit] = parseCSVLine(line);
+          const [company, date, employee, entry, exit] = Array.isArray(line) ? line : parseCSVLine(line);
           
           if (!company || !employee) return;
 
@@ -188,7 +230,8 @@ export default function ImportarDados() {
 
         for (const line of batch) {
           try {
-            const [company, dateStr, employee, entryTime, exitTime] = parseCSVLine(line);
+            const fields = Array.isArray(line) ? line : parseCSVLine(line);
+            const [company, dateStr, employee, entryTime, exitTime, lunchExit, lunchReturn, setor] = fields;
             
             if (!company || !employee || !dateStr || !entryTime || !exitTime) continue;
 
@@ -202,7 +245,12 @@ export default function ImportarDados() {
             if (!companyData) continue;
 
             const date = parseDate(dateStr);
-            const workedHours = calculateWorkedHours(entryTime, exitTime);
+            const workedHours = calculateWorkedHours(
+              entryTime, 
+              exitTime,
+              lunchExit || null,
+              lunchReturn || null
+            );
             const recordDate = new Date(date + 'T00:00:00');
             const { dailyValue, overtimeValue, totalValue } = calculateDailyAndOvertimeValues(
               workedHours,
@@ -216,10 +264,13 @@ export default function ImportarDados() {
               date,
               entry_time: entryTime,
               exit_time: exitTime,
+              lunch_exit_time: lunchExit || null,
+              lunch_return_time: lunchReturn || null,
               worked_hours: workedHours,
               daily_value: dailyValue,
               overtime_value: overtimeValue,
               total_value: totalValue,
+              setor: setor || null,
             });
           } catch (error: any) {
             errors.push(`Erro ao processar registro: ${error.message}`);
@@ -286,23 +337,27 @@ export default function ImportarDados() {
         <CardHeader>
           <CardTitle>Formato do Arquivo</CardTitle>
           <CardDescription>
-            O arquivo CSV deve conter as seguintes colunas separadas por ponto e vírgula (;):
+            Baixe o modelo ou siga o formato abaixo para importação
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <Button variant="outline" onClick={downloadTemplate} className="w-full">
+            <Download className="mr-2 h-4 w-4" />
+            Baixar Modelo Excel
+          </Button>
+          
           <div className="space-y-2">
-            <p className="text-sm font-mono bg-muted p-2 rounded">
-              EMPRESA;DATA;NOME;ENTRADA;SAÍDA;GESTOR;SETOR
-            </p>
-            <p className="text-sm text-muted-foreground">
-              • <strong>EMPRESA</strong>: Nome da empresa<br />
-              • <strong>DATA</strong>: Data no formato DD/MM/YYYY<br />
-              • <strong>NOME</strong>: Nome do funcionário<br />
-              • <strong>ENTRADA</strong>: Horário de entrada (HH:MM:SS)<br />
-              • <strong>SAÍDA</strong>: Horário de saída (HH:MM:SS)<br />
-              • <strong>GESTOR</strong>: Opcional<br />
-              • <strong>SETOR</strong>: Opcional
-            </p>
+            <p className="text-sm font-semibold">Colunas necessárias:</p>
+            <div className="text-sm space-y-1 text-muted-foreground">
+              <p>• <strong>EMPRESA</strong>: Nome da empresa</p>
+              <p>• <strong>DATA</strong>: Data no formato DD/MM/YYYY</p>
+              <p>• <strong>NOME</strong>: Nome completo do funcionário</p>
+              <p>• <strong>ENTRADA</strong>: Horário de entrada (HH:MM:SS)</p>
+              <p>• <strong>SAÍDA</strong>: Horário de saída (HH:MM:SS)</p>
+              <p>• <strong>SAÍDA ALMOÇO</strong>: Horário de saída para almoço (HH:MM:SS)</p>
+              <p>• <strong>VOLTA ALMOÇO</strong>: Horário de retorno do almoço (HH:MM:SS)</p>
+              <p>• <strong>SETOR</strong>: Setor (Logística ou Qualidade)</p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -311,16 +366,29 @@ export default function ImportarDados() {
         <CardHeader>
           <CardTitle>Selecionar Arquivo</CardTitle>
           <CardDescription>
-            Escolha o arquivo CSV para importação
+            Escolha o tipo e selecione o arquivo para importação
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="file">Arquivo CSV</Label>
+            <Label>Tipo de Arquivo</Label>
+            <Select value={importType} onValueChange={(value: 'csv' | 'excel') => setImportType(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="excel">Excel (.xlsx, .xls)</SelectItem>
+                <SelectItem value="csv">CSV (.csv)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="file">Arquivo</Label>
             <Input
               id="file"
               type="file"
-              accept=".csv"
+              accept={importType === 'csv' ? '.csv' : '.xlsx,.xls'}
               onChange={handleFileChange}
               disabled={importing}
             />

@@ -556,33 +556,35 @@ export default function Ponto() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="exit_time">Saída (opcional)</Label>
+                    <Label htmlFor="exit_time">Saída</Label>
                     <Input
                       id="exit_time"
                       type="time"
                       value={formData.exit_time}
                       onChange={(e) => setFormData({ ...formData, exit_time: e.target.value })}
+                      required
                     />
-                    <p className="text-xs text-muted-foreground">Deixe em branco se ainda não saiu</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="lunch_exit_time">Saída para Almoço (opcional)</Label>
+                    <Label htmlFor="lunch_exit_time">Saída para Almoço</Label>
                     <Input
                       id="lunch_exit_time"
                       type="time"
                       value={formData.lunch_exit_time}
                       onChange={(e) => setFormData({ ...formData, lunch_exit_time: e.target.value })}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lunch_return_time">Retorno do Almoço (opcional)</Label>
+                    <Label htmlFor="lunch_return_time">Retorno do Almoço</Label>
                     <Input
                       id="lunch_return_time"
                       type="time"
                       value={formData.lunch_return_time}
                       onChange={(e) => setFormData({ ...formData, lunch_return_time: e.target.value })}
+                      required
                     />
                   </div>
                 </div>
