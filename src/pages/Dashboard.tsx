@@ -6,6 +6,7 @@ import { Users, Building2, Clock, DollarSign, Calendar, AlertCircle, BarChart3 }
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/utils/formatCurrency';
 
 interface DashboardStats {
   totalEmployees: number;
@@ -327,7 +328,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              R$ {stats.monthTotal.toFixed(2)}
+              {formatCurrency(stats.monthTotal)}
             </div>
           </CardContent>
         </Card>
@@ -360,23 +361,23 @@ export default function Dashboard() {
             <div className="flex justify-between items-center p-4 bg-muted/30 rounded-lg border border-border/40">
               <span className="text-sm font-medium">Valor Diárias</span>
               <span className="text-lg font-bold text-success/80">
-                R$ {monthlyDailyTotal.toFixed(2)}
+                {formatCurrency(monthlyDailyTotal)}
               </span>
             </div>
             <div className="flex justify-between items-center p-4 bg-muted/30 rounded-lg border border-border/40">
               <span className="text-sm font-medium">Valor Extras</span>
               <span className="text-lg font-bold text-info/80">
-                R$ {monthlyOvertimeTotal.toFixed(2)}
+                {formatCurrency(monthlyOvertimeTotal)}
               </span>
             </div>
             <div className="flex justify-between items-center p-4 bg-primary/5 rounded-lg border border-primary/20">
               <div>
                 <p className="text-sm font-medium">{currentMonth}</p>
-                <p className="text-lg font-bold">R$ {stats.monthTotal.toFixed(2)}</p>
+                <p className="text-lg font-bold">{formatCurrency(stats.monthTotal)}</p>
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">{previousMonth}</p>
-                <p className="text-sm font-semibold">R$ {prevMonthTotal.toFixed(2)}</p>
+                <p className="text-sm font-semibold">{formatCurrency(prevMonthTotal)}</p>
               </div>
             </div>
           </CardContent>
@@ -409,7 +410,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <span className="font-semibold text-sm">
-                      R$ {unitCost.total.toFixed(2)}
+                      {formatCurrency(unitCost.total)}
                     </span>
                   </div>
                 ))
@@ -445,7 +446,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <span className="font-semibold text-sm">
-                      R$ {sector.total.toFixed(2)}
+                      {formatCurrency(sector.total)}
                     </span>
                   </div>
                 ))
@@ -484,7 +485,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <span className="font-semibold text-sm">
-                      R$ {(record.total_value || 0).toFixed(2)}
+                      {formatCurrency(record.total_value || 0)}
                     </span>
                   </div>
                 ))

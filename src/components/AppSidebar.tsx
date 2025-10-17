@@ -1,4 +1,4 @@
-import { Home, Users, Clock, Building2, BarChart3, Upload, LogOut, Fingerprint, Settings } from 'lucide-react';
+import { Home, Users, Clock, Building2, BarChart3, Upload, LogOut, Settings, Shield } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -25,12 +25,13 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const menuItems = [
   { title: 'Dashboard', url: '/dashboard', icon: Home, adminOnly: true },
-  // { title: 'Ponto Eletrônico', url: '/ponto-eletronico', icon: Fingerprint }, // Oculto temporariamente
-  { title: 'Controle de Ponto', url: '/ponto', icon: Clock, inputerAccess: true },
+  { title: 'Controle de Ponto', url: '/ponto', icon: Clock, adminOnly: true },
+  { title: 'Controle de Ponto', url: '/controle-ponto-simples', icon: Clock, inputerAccess: true },
   { title: 'Relatórios', url: '/relatorios', icon: BarChart3, adminOnly: true },
   { title: 'Funcionários', url: '/funcionarios', icon: Users, adminOnly: true },
   { title: 'Empresas', url: '/empresas', icon: Building2, adminOnly: true },
   { title: 'Importar Dados', url: '/importar', icon: Upload, devOnly: true },
+  { title: 'Gerenciamento de Roles', url: '/gerenciamento-roles', icon: Shield, devOnly: true },
 ];
 
 export function AppSidebar() {

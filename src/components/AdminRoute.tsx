@@ -19,7 +19,7 @@ export function AdminRoute({ children }: AdminRouteProps) {
     );
   }
 
-  if (!hasRole('admin') && !hasRole('dev')) {
+  if (!hasRole('admin') && !hasRole('dev') && !hasRole('moderator')) {
     return (
       <div className="max-w-2xl mx-auto mt-8">
         <Alert variant="destructive">

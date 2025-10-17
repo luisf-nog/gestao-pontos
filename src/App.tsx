@@ -18,11 +18,13 @@ const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Ponto = lazy(() => import("./pages/Ponto"));
+const ControlePontoSimples = lazy(() => import("./pages/ControlePontoSimples"));
 const PontoEletronico = lazy(() => import("./pages/PontoEletronico"));
 const Funcionarios = lazy(() => import("./pages/Funcionarios"));
 const Empresas = lazy(() => import("./pages/Empresas"));
 const Relatorios = lazy(() => import("./pages/Relatorios"));
 const ImportarDados = lazy(() => import("./pages/ImportarDados"));
+const GerenciamentoRoles = lazy(() => import("./pages/GerenciamentoRoles"));
 const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -60,10 +62,10 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
     return <Navigate to="/ponto-eletronico" replace />;
   }
   
-  // Redirecionar inputers apenas para /ponto
-  const isInputer = hasRole('inputer');
-  if (isInputer && window.location.pathname !== '/ponto' && window.location.pathname !== '/settings') {
-    return <Navigate to="/ponto" replace />;
+  // Redirecionar inputers apenas para /controle-ponto-simples
+  const isInputer = hasRole('inputer') && !hasRole('admin') && !hasRole('dev');
+  if (isInputer && window.location.pathname !== '/controle-ponto-simples' && window.location.pathname !== '/settings') {
+    return <Navigate to="/controle-ponto-simples" replace />;
   }
   
   // Redirecionar admin/dev que tentarem acessar ponto eletrônico
@@ -127,12 +129,14 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/dashboard" element={<ProtectedLayout><AdminRoute><Dashboard /></AdminRoute></ProtectedLayout>} />
-                <Route path="/ponto" element={<ProtectedLayout><Ponto /></ProtectedLayout>} />
+                <Route path="/ponto" element={<ProtectedLayout><AdminRoute><Ponto /></AdminRoute></ProtectedLayout>} />
+                <Route path="/controle-ponto-simples" element={<ProtectedLayout><ControlePontoSimples /></ProtectedLayout>} />
                 <Route path="/ponto-eletronico" element={<ProtectedLayout><PontoEletronico /></ProtectedLayout>} />
                 <Route path="/relatorios" element={<ProtectedLayout><AdminRoute><Relatorios /></AdminRoute></ProtectedLayout>} />
                 <Route path="/funcionarios" element={<ProtectedLayout><AdminRoute><Funcionarios /></AdminRoute></ProtectedLayout>} />
                 <Route path="/empresas" element={<ProtectedLayout><AdminRoute><Empresas /></AdminRoute></ProtectedLayout>} />
                 <Route path="/importar" element={<ProtectedLayout><AdminRoute><ImportarDados /></AdminRoute></ProtectedLayout>} />
+                <Route path="/gerenciamento-roles" element={<ProtectedLayout><AdminRoute><GerenciamentoRoles /></AdminRoute></ProtectedLayout>} />
                 <Route path="/settings" element={<ProtectedLayout><Settings /></ProtectedLayout>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
