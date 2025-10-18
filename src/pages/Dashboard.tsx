@@ -52,6 +52,8 @@ export default function Dashboard() {
   const [recentRecords, setRecentRecords] = useState<RecentRecord[]>([]);
   const [monthlyDailyTotal, setMonthlyDailyTotal] = useState(0);
   const [monthlyOvertimeTotal, setMonthlyOvertimeTotal] = useState(0);
+  const [firstFortnightTotal, setFirstFortnightTotal] = useState(0);
+  const [secondFortnightTotal, setSecondFortnightTotal] = useState(0);
   const [sectorCosts, setSectorCosts] = useState<SectorCost[]>([]);
   const [workUnitCosts, setWorkUnitCosts] = useState<WorkUnitCost[]>([]);
   const [prevMonthTotal, setPrevMonthTotal] = useState(0);
@@ -130,6 +132,8 @@ export default function Dashboard() {
     let monthTotal = 0;
     let dailyTotal = 0;
     let overtimeTotal = 0;
+    let firstFortnightTotal = 0;
+    let secondFortnightTotal = 0;
 
     monthRecords?.forEach((record: any) => {
       // Pular registros sem cargo vinculado
@@ -150,6 +154,13 @@ export default function Dashboard() {
       monthTotal += totalValue;
       dailyTotal += dailyValue;
       overtimeTotal += overtimeValue;
+
+      // Separar por quinzena
+      if (day <= 15) {
+        firstFortnightTotal += totalValue;
+      } else {
+        secondFortnightTotal += totalValue;
+      }
     });
 
     // Buscar registros do mês anterior COM dados dos cargos para cálculo dinâmico
@@ -219,6 +230,8 @@ export default function Dashboard() {
 
     setMonthlyDailyTotal(dailyTotal);
     setMonthlyOvertimeTotal(overtimeTotal);
+    setFirstFortnightTotal(firstFortnightTotal);
+    setSecondFortnightTotal(secondFortnightTotal);
     setPrevMonthTotal(prevTotal);
     setRecentRecords(recent || []);
   };
@@ -453,6 +466,42 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
+              1ª Quinzena
+            </CardTitle>
+            <CardDescription>Dias 01-15 de {currentMonth.split(' de ')[0]}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between items-center p-4 bg-primary/5 rounded-lg border border-primary/20">
+              <span className="text-sm font-medium">Total 1ª Quinzena</span>
+              <span className="text-xl font-bold text-primary">
+                {formatCurrency(firstFortnightTotal)}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              2ª Quinzena
+            </CardTitle>
+            <CardDescription>Dias 16-31 de {currentMonth.split(' de ')[0]}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between items-center p-4 bg-accent/20 rounded-lg border border-accent/40">
+              <span className="text-sm font-medium">Total 2ª Quinzena</span>
+              <span className="text-xl font-bold text-accent-foreground">
+                {formatCurrency(secondFortnightTotal)}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
               Resumo Mensal
             </CardTitle>
             <CardDescription>{currentMonth}</CardDescription>
@@ -470,10 +519,10 @@ export default function Dashboard() {
                 {formatCurrency(monthlyOvertimeTotal)}
               </span>
             </div>
-            <div className="flex justify-between items-center p-4 bg-primary/5 rounded-lg border border-primary/20">
+            <div className="flex justify-between items-center p-4 bg-success/10 rounded-lg border border-success/30">
               <div>
-                <p className="text-sm font-medium">{currentMonth}</p>
-                <p className="text-lg font-bold">{formatCurrency(stats.monthTotal)}</p>
+                <p className="text-sm font-medium">Total Acumulado</p>
+                <p className="text-xl font-bold text-success">{formatCurrency(stats.monthTotal)}</p>
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">{previousMonth}</p>
