@@ -63,7 +63,7 @@ export default function ControlePontoSimples() {
     exit_time: '',
     lunch_exit_time: '',
     lunch_return_time: '',
-    setor: 'Logística',
+    setor: '',
   });
 
   useEffect(() => {
@@ -510,7 +510,7 @@ export default function ControlePontoSimples() {
                   <div className="space-y-2 col-span-2">
                     <Label htmlFor="setor">Setor</Label>
                     <Select
-                      value={formData.setor}
+                      value={formData.setor || "Logística"}
                       onValueChange={(value) => setFormData({ ...formData, setor: value })}
                     >
                       <SelectTrigger id="setor">

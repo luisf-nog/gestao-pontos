@@ -129,6 +129,9 @@ export default function Relatorios() {
         employees (
           name,
           companies (
+            name
+          ),
+          job_positions (
             name,
             daily_rate,
             overtime_rate
@@ -177,12 +180,17 @@ export default function Relatorios() {
       const [year, month, day] = record.date.split('-').map(Number);
       const recordDate = new Date(year, month - 1, day);
       
-      // Calcular valores dinamicamente com base nos valores atuais da empresa
+      // Se não tem cargo vinculado, pular este registro
+      if (!record.employees.job_positions) {
+        return acc;
+      }
+      
+      // Calcular valores dinamicamente com base nos valores do cargo do funcionário
       const { dailyValue, overtimeValue, totalValue } = calculateDailyAndOvertimeValues(
         record.worked_hours,
         recordDate,
-        record.employees.companies.daily_rate,
-        record.employees.companies.overtime_rate
+        record.employees.job_positions.daily_rate,
+        record.employees.job_positions.overtime_rate
       );
 
       if (!acc[empId]) {
