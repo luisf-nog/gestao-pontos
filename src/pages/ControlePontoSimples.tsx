@@ -63,7 +63,7 @@ export default function ControlePontoSimples() {
     exit_time: '',
     lunch_exit_time: '',
     lunch_return_time: '',
-    setor: '',
+    setor: 'Logística',
   });
 
   useEffect(() => {
@@ -172,7 +172,7 @@ export default function ControlePontoSimples() {
       );
     }
 
-    if (selectedEmployee) {
+    if (selectedEmployee && selectedEmployee !== 'all') {
       filtered = filtered.filter(record => record.employee_id === selectedEmployee);
     }
 
@@ -346,7 +346,7 @@ export default function ControlePontoSimples() {
       exit_time: '',
       lunch_exit_time: '',
       lunch_return_time: '',
-      setor: '',
+      setor: 'Logística',
     });
   };
 
@@ -510,7 +510,7 @@ export default function ControlePontoSimples() {
                   <div className="space-y-2 col-span-2">
                     <Label htmlFor="setor">Setor</Label>
                     <Select
-                      value={formData.setor || "Logística"}
+                      value={formData.setor}
                       onValueChange={(value) => setFormData({ ...formData, setor: value })}
                     >
                       <SelectTrigger id="setor">
@@ -589,7 +589,7 @@ export default function ControlePontoSimples() {
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   {employees.map((emp) => (
                     <SelectItem key={emp.id} value={emp.id}>
                       {emp.name}
