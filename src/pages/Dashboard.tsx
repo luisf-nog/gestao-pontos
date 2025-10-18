@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/utils/formatCurrency';
+import { calculateDailyAndOvertimeValues } from '@/utils/timeCalculations';
 
 interface DashboardStats {
   totalEmployees: number;
@@ -102,36 +103,93 @@ export default function Dashboard() {
 
     if (compError) throw compError;
 
-    // Buscar registros do mês atual
+    // Buscar registros do mês atual COM dados dos cargos para cálculo dinâmico
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     
     const { data: monthRecords, error: monthError } = await supabase
       .from('time_records')
-      .select('id, total_value, daily_value, overtime_value')
+      .select(`
+        id,
+        date,
+        worked_hours,
+        employees (
+          job_positions (
+            daily_rate,
+            overtime_rate
+          )
+        )
+      `)
       .gte('date', format(startOfMonth, 'yyyy-MM-dd'))
       .lte('date', format(endOfMonth, 'yyyy-MM-dd'));
 
     if (monthError) throw monthError;
 
-    const monthTotal = monthRecords?.reduce((sum, record) => sum + (record.total_value || 0), 0) || 0;
-    const dailyTotal = monthRecords?.reduce((sum, record) => sum + (record.daily_value || 0), 0) || 0;
-    const overtimeTotal = monthRecords?.reduce((sum, record) => sum + (record.overtime_value || 0), 0) || 0;
+    // Calcular valores dinamicamente usando a mesma lógica dos Relatórios
+    let monthTotal = 0;
+    let dailyTotal = 0;
+    let overtimeTotal = 0;
 
-    // Buscar registros do mês anterior
+    monthRecords?.forEach((record: any) => {
+      // Pular registros sem cargo vinculado
+      if (!record.employees?.job_positions) return;
+
+      // Parse da data corretamente
+      const [year, month, day] = record.date.split('-').map(Number);
+      const recordDate = new Date(year, month - 1, day);
+
+      // Calcular valores com base nos valores atuais do cargo
+      const { dailyValue, overtimeValue, totalValue } = calculateDailyAndOvertimeValues(
+        record.worked_hours,
+        recordDate,
+        record.employees.job_positions.daily_rate,
+        record.employees.job_positions.overtime_rate
+      );
+
+      monthTotal += totalValue;
+      dailyTotal += dailyValue;
+      overtimeTotal += overtimeValue;
+    });
+
+    // Buscar registros do mês anterior COM dados dos cargos para cálculo dinâmico
     const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
     
     const { data: prevMonthRecords, error: prevMonthError } = await supabase
       .from('time_records')
-      .select('total_value')
+      .select(`
+        date,
+        worked_hours,
+        employees (
+          job_positions (
+            daily_rate,
+            overtime_rate
+          )
+        )
+      `)
       .gte('date', format(startOfPrevMonth, 'yyyy-MM-dd'))
       .lte('date', format(endOfPrevMonth, 'yyyy-MM-dd'));
 
     if (prevMonthError) throw prevMonthError;
 
-    const prevTotal = prevMonthRecords?.reduce((sum, record) => sum + (record.total_value || 0), 0) || 0;
+    // Calcular total do mês anterior dinamicamente
+    let prevTotal = 0;
+    prevMonthRecords?.forEach((record: any) => {
+      if (!record.employees?.job_positions) return;
+
+      const [year, month, day] = record.date.split('-').map(Number);
+      const recordDate = new Date(year, month - 1, day);
+
+      const { totalValue } = calculateDailyAndOvertimeValues(
+        record.worked_hours,
+        recordDate,
+        record.employees.job_positions.daily_rate,
+        record.employees.job_positions.overtime_rate
+      );
+
+      prevTotal += totalValue;
+    });
 
     // Buscar registros recentes
     const { data: recent, error: recentError } = await supabase
@@ -172,7 +230,17 @@ export default function Dashboard() {
 
     const { data, error } = await supabase
       .from('time_records')
-      .select('setor, total_value')
+      .select(`
+        setor,
+        date,
+        worked_hours,
+        employees (
+          job_positions (
+            daily_rate,
+            overtime_rate
+          )
+        )
+      `)
       .gte('date', format(startOfMonth, 'yyyy-MM-dd'))
       .lte('date', format(endOfMonth, 'yyyy-MM-dd'))
       .not('setor', 'is', null);
@@ -185,7 +253,22 @@ export default function Dashboard() {
         if (!acc[sector]) {
           acc[sector] = { setor: sector, total: 0, count: 0 };
         }
-        acc[sector].total += record.total_value || 0;
+
+        // Calcular valor dinamicamente
+        if (record.employees?.job_positions) {
+          const [year, month, day] = record.date.split('-').map(Number);
+          const recordDate = new Date(year, month - 1, day);
+
+          const { totalValue } = calculateDailyAndOvertimeValues(
+            record.worked_hours,
+            recordDate,
+            record.employees.job_positions.daily_rate,
+            record.employees.job_positions.overtime_rate
+          );
+
+          acc[sector].total += totalValue;
+        }
+        
         acc[sector].count += 1;
         return acc;
       }, {});
@@ -201,29 +284,46 @@ export default function Dashboard() {
 
     const { data: records, error } = await supabase
       .from('time_records')
-      .select('employee_id, total_value')
+      .select(`
+        employee_id,
+        date,
+        worked_hours,
+        employees (
+          id,
+          work_unit,
+          job_positions (
+            daily_rate,
+            overtime_rate
+          )
+        )
+      `)
       .gte('date', format(startOfMonth, 'yyyy-MM-dd'))
       .lte('date', format(endOfMonth, 'yyyy-MM-dd'));
 
     if (error) throw error;
 
     if (records) {
-      const { data: employees, error: empError } = await supabase
-        .from('employees')
-        .select('id, work_unit');
-
-      if (empError) throw empError;
-
       const costs: { [key: string]: { unit: string; total: number; count: number } } = {};
 
       records.forEach((record: any) => {
-        const employee = employees?.find(e => e.id === record.employee_id);
-        if (employee && employee.work_unit) {
+        const employee = record.employees;
+        if (employee && employee.work_unit && employee.job_positions) {
+          // Calcular valor dinamicamente
+          const [year, month, day] = record.date.split('-').map(Number);
+          const recordDate = new Date(year, month - 1, day);
+
+          const { totalValue } = calculateDailyAndOvertimeValues(
+            record.worked_hours,
+            recordDate,
+            employee.job_positions.daily_rate,
+            employee.job_positions.overtime_rate
+          );
+
           employee.work_unit.forEach((unit: string) => {
             if (!costs[unit]) {
               costs[unit] = { unit, total: 0, count: 0 };
             }
-            costs[unit].total += (record.total_value || 0) / employee.work_unit.length;
+            costs[unit].total += totalValue / employee.work_unit.length;
             costs[unit].count += 1 / employee.work_unit.length;
           });
         }
