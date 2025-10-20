@@ -539,10 +539,7 @@ export default function ControlePontoSimples() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Logística">Logística</SelectItem>
-                        <SelectItem value="Administrativo">Administrativo</SelectItem>
-                        <SelectItem value="Operacional">Operacional</SelectItem>
-                        <SelectItem value="Vendas">Vendas</SelectItem>
-                        <SelectItem value="TI">TI</SelectItem>
+                        <SelectItem value="Qualidade">Qualidade</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
