@@ -38,7 +38,7 @@ const routePermissions = [
   { route: '/controle-ponto-simples', label: 'Controle de Ponto (Simples)', roles: ['inputer', 'dev'] },
   { route: '/relatorios', label: 'Relatórios', roles: ['admin', 'dev'] },
   { route: '/funcionarios', label: 'Funcionários', roles: ['admin', 'dev'] },
-  { route: '/empresas', label: 'Empresas', roles: ['admin', 'dev'] },
+  { route: '/empresas', label: 'Empresas', roles: ['dev'] },
   { route: '/importar', label: 'Importar Dados', roles: ['dev'] },
   { route: '/gerenciamento-roles', label: 'Gerenciamento de Roles', roles: ['dev'] },
   { route: '/settings', label: 'Configurações', roles: ['admin', 'dev', 'inputer', 'user', 'moderator'] },

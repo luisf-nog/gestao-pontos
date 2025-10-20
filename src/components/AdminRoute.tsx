@@ -19,6 +19,23 @@ export function AdminRoute({ children }: AdminRouteProps) {
     );
   }
 
+  // Verificar se é a rota específica que requer acesso dev
+  const requiresDevAccess = window.location.pathname === '/empresas' || window.location.pathname === '/gerenciamento-roles';
+  
+  if (requiresDevAccess && !hasRole('dev')) {
+    return (
+      <div className="max-w-2xl mx-auto mt-8">
+        <Alert variant="destructive">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>Acesso Negado</AlertTitle>
+          <AlertDescription>
+            Você não tem permissão para acessar esta página. Apenas desenvolvedores podem visualizar este conteúdo.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   if (!hasRole('admin') && !hasRole('dev') && !hasRole('moderator')) {
     return (
       <div className="max-w-2xl mx-auto mt-8">
