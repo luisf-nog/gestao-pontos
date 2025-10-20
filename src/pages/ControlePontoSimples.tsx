@@ -53,6 +53,7 @@ export default function ControlePontoSimples() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<TimeRecord | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
   const itemsPerPage = 30;
   const { toast } = useToast();
 
@@ -67,8 +68,17 @@ export default function ControlePontoSimples() {
   });
 
   useEffect(() => {
-    fetchEmployees();
-    fetchTimeRecords();
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([fetchEmployees(), fetchTimeRecords()]);
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -398,6 +408,17 @@ export default function ControlePontoSimples() {
     currentPage * itemsPerPage
   );
   const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando dados...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
