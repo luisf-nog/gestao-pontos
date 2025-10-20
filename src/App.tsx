@@ -56,16 +56,16 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
   
-  // Redirecionar users comuns para ponto eletrônico se tentarem acessar outras páginas
-  const isRegularUser = !hasRole('admin') && !hasRole('dev') && !hasRole('moderator');
-  if (isRegularUser && window.location.pathname !== '/ponto-eletronico' && window.location.pathname !== '/settings') {
-    return <Navigate to="/ponto-eletronico" replace />;
-  }
-  
   // Redirecionar inputers apenas para /controle-ponto-simples
   const isInputer = hasRole('inputer') && !hasRole('admin') && !hasRole('dev');
   if (isInputer && window.location.pathname !== '/controle-ponto-simples' && window.location.pathname !== '/settings') {
     return <Navigate to="/controle-ponto-simples" replace />;
+  }
+  
+  // Redirecionar users comuns (exclui inputer) para ponto eletrônico se tentarem acessar outras páginas
+  const isRegularUser = !hasRole('admin') && !hasRole('dev') && !hasRole('moderator') && !hasRole('inputer');
+  if (isRegularUser && window.location.pathname !== '/ponto-eletronico' && window.location.pathname !== '/settings') {
+    return <Navigate to="/ponto-eletronico" replace />;
   }
   
   // Redirecionar admin/dev que tentarem acessar ponto eletrônico
