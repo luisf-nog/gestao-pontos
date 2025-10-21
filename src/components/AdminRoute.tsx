@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState, memo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +9,7 @@ interface AdminRouteProps {
   children: ReactNode;
 }
 
-export function AdminRoute({ children }: AdminRouteProps) {
+export const AdminRoute = memo(({ children }: AdminRouteProps) => {
   const { roles, isLoading: authLoading } = useAuth();
   const location = useLocation();
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
@@ -78,4 +78,4 @@ export function AdminRoute({ children }: AdminRouteProps) {
   }
 
   return <>{children}</>;
-}
+});

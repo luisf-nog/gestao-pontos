@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, memo } from 'react';
 
 interface Particle {
   x: number;
@@ -9,7 +9,7 @@ interface Particle {
   opacity: number;
 }
 
-export const AnimatedBackground = () => {
+export const AnimatedBackground = memo(() => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const animationFrameRef = useRef<number>();
@@ -159,4 +159,4 @@ export const AnimatedBackground = () => {
       }}
     />
   );
-};
+});

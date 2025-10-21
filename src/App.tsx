@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, memo } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,19 +28,24 @@ const GerenciamentoRoles = lazy(() => import("./pages/GerenciamentoRoles"));
 const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Optimize QueryClient with better defaults
+// Optimize QueryClient with better defaults for performance
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes
-      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5, // 5 minutes - avoid unnecessary refetches
+      gcTime: 1000 * 60 * 10, // 10 minutes - cache cleanup
+      refetchOnWindowFocus: false, // disable automatic refetch on focus
+      refetchOnReconnect: false, // disable automatic refetch on reconnect
+      retry: 1, // only retry once on failure
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    },
+    mutations: {
       retry: 1,
     },
   },
 });
 
-function ProtectedLayout({ children }: { children: React.ReactNode }) {
+const ProtectedLayout = memo(({ children }: { children: React.ReactNode }) => {
   const { user, isLoading, hasRole } = useAuth();
   const { theme, setTheme } = useTheme();
 
@@ -102,19 +107,19 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
-    </SidebarProvider>
+      </SidebarProvider>
   );
-}
+});
 
-// Loading fallback component
-const LoadingFallback = () => (
+// Loading fallback component - memoized for performance
+const LoadingFallback = memo(() => (
   <div className="min-h-screen flex items-center justify-center">
     <div className="text-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
       <p>Carregando...</p>
     </div>
   </div>
-);
+));
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

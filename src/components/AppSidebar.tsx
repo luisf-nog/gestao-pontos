@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { Home, Users, Clock, Building2, BarChart3, Upload, LogOut, Settings, Shield } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -34,7 +35,7 @@ const menuItems = [
   { title: 'Gerenciamento de Roles', url: '/gerenciamento-roles', icon: Shield, devOnly: true },
 ];
 
-export function AppSidebar() {
+export const AppSidebar = memo(() => {
   const { open } = useSidebar();
   const { user, hasRole, signOut } = useAuth();
 
@@ -43,7 +44,22 @@ export function AppSidebar() {
       ? 'bg-muted text-foreground font-semibold border-l-2 border-foreground/20' 
       : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground';
 
-  const userInitials = user?.email?.substring(0, 2).toUpperCase() || 'U';
+  // Memoize user initials to avoid recalculation
+  const userInitials = useMemo(() => 
+    user?.email?.substring(0, 2).toUpperCase() || 'U',
+    [user?.email]
+  );
+
+  // Memoize filtered menu items
+  const visibleMenuItems = useMemo(() => 
+    menuItems.filter((item) => {
+      if (item.devOnly && !hasRole('dev')) return false;
+      if (item.inputerAccess && !hasRole('admin') && !hasRole('dev') && !hasRole('inputer')) return false;
+      if (item.adminOnly && !hasRole('admin') && !hasRole('dev')) return false;
+      return true;
+    }),
+    [hasRole]
+  );
 
   return (
     <Sidebar collapsible="icon">
@@ -52,27 +68,16 @@ export function AppSidebar() {
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => {
-                // Importar Dados: apenas dev
-                if (item.devOnly && !hasRole('dev')) return null;
-                
-                // Controle de Ponto: admin, dev ou inputer
-                if (item.inputerAccess && !hasRole('admin') && !hasRole('dev') && !hasRole('inputer')) return null;
-                
-                // Outras páginas admin: admin ou dev
-                if (item.adminOnly && !hasRole('admin') && !hasRole('dev')) return null;
-                
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink to={item.url} end className={getNavCls}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              {visibleMenuItems.map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton asChild>
+                    <NavLink to={item.url} end className={getNavCls}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -111,4 +116,4 @@ export function AppSidebar() {
       </SidebarFooter>
     </Sidebar>
   );
-}
+});
