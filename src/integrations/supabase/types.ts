@@ -311,6 +311,30 @@ export type Database = {
         }
         Relationships: []
       }
+      route_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          role: Database["public"]["Enums"]["app_role"]
+          route: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          role: Database["public"]["Enums"]["app_role"]
+          route: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          route?: string
+        }
+        Relationships: []
+      }
       time_records: {
         Row: {
           created_at: string
