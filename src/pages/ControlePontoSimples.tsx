@@ -200,21 +200,12 @@ export default function ControlePontoSimples() {
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validar campos obrigatórios
-    if (!formData.lunch_exit_time || !formData.lunch_return_time) {
-      toast({
-        variant: 'destructive',
-        title: 'Campos obrigatórios',
-        description: 'Saída e retorno do almoço são obrigatórios.',
-      });
-      return;
-    }
-
+    // Validar que se a saída for preenchida, os horários de almoço também devem estar
     if (formData.exit_time && (!formData.lunch_exit_time || !formData.lunch_return_time)) {
       toast({
         variant: 'destructive',
         title: 'Campos obrigatórios',
-        description: 'Para registrar a saída, é necessário informar o horário de almoço.',
+        description: 'Para registrar a saída, é necessário preencher a saída e retorno do almoço.',
       });
       return;
     }
@@ -497,24 +488,22 @@ export default function ControlePontoSimples() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="lunch_exit_time">Saída Almoço *</Label>
+                    <Label htmlFor="lunch_exit_time">Saída Almoço</Label>
                     <Input
                       id="lunch_exit_time"
                       type="time"
                       value={formData.lunch_exit_time}
                       onChange={(e) => setFormData({ ...formData, lunch_exit_time: e.target.value })}
-                      required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="lunch_return_time">Retorno Almoço *</Label>
+                    <Label htmlFor="lunch_return_time">Retorno Almoço</Label>
                     <Input
                       id="lunch_return_time"
                       type="time"
                       value={formData.lunch_return_time}
                       onChange={(e) => setFormData({ ...formData, lunch_return_time: e.target.value })}
-                      required
                     />
                   </div>
 
