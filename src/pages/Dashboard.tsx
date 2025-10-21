@@ -17,16 +17,26 @@ interface DashboardStats {
   pendingExits: number;
 }
 
+interface FortnightData {
+  total: number;
+  dailyTotal: number;
+  overtimeTotal: number;
+}
+
 interface SectorCost {
   setor: string;
   total: number;
   count: number;
+  firstFortnight: number;
+  secondFortnight: number;
 }
 
 interface WorkUnitCost {
   unit: string;
   total: number;
   count: number;
+  firstFortnight: number;
+  secondFortnight: number;
 }
 
 interface RecentRecord {
@@ -55,6 +65,10 @@ export default function Dashboard() {
   const [sectorCosts, setSectorCosts] = useState<SectorCost[]>([]);
   const [workUnitCosts, setWorkUnitCosts] = useState<WorkUnitCost[]>([]);
   const [prevMonthTotal, setPrevMonthTotal] = useState(0);
+  const [firstFortnight, setFirstFortnight] = useState<FortnightData>({ total: 0, dailyTotal: 0, overtimeTotal: 0 });
+  const [secondFortnight, setSecondFortnight] = useState<FortnightData>({ total: 0, dailyTotal: 0, overtimeTotal: 0 });
+  const [prevFirstFortnight, setPrevFirstFortnight] = useState(0);
+  const [prevSecondFortnight, setPrevSecondFortnight] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const currentMonth = format(new Date(), 'MMMM \'de\' yyyy', { locale: ptBR });
@@ -130,6 +144,12 @@ export default function Dashboard() {
     let monthTotal = 0;
     let dailyTotal = 0;
     let overtimeTotal = 0;
+    let firstFortnightTotal = 0;
+    let firstFortnightDaily = 0;
+    let firstFortnightOvertime = 0;
+    let secondFortnightTotal = 0;
+    let secondFortnightDaily = 0;
+    let secondFortnightOvertime = 0;
 
     monthRecords?.forEach((record: any) => {
       // Pular registros sem cargo vinculado
@@ -150,6 +170,29 @@ export default function Dashboard() {
       monthTotal += totalValue;
       dailyTotal += dailyValue;
       overtimeTotal += overtimeValue;
+
+      // Separar por quinzena (1-15 e 16-fim do mês)
+      if (day <= 15) {
+        firstFortnightTotal += totalValue;
+        firstFortnightDaily += dailyValue;
+        firstFortnightOvertime += overtimeValue;
+      } else {
+        secondFortnightTotal += totalValue;
+        secondFortnightDaily += dailyValue;
+        secondFortnightOvertime += overtimeValue;
+      }
+    });
+
+    setFirstFortnight({
+      total: firstFortnightTotal,
+      dailyTotal: firstFortnightDaily,
+      overtimeTotal: firstFortnightOvertime
+    });
+
+    setSecondFortnight({
+      total: secondFortnightTotal,
+      dailyTotal: secondFortnightDaily,
+      overtimeTotal: secondFortnightOvertime
     });
 
     // Buscar registros do mês anterior COM dados dos cargos para cálculo dinâmico
@@ -175,6 +218,9 @@ export default function Dashboard() {
 
     // Calcular total do mês anterior dinamicamente
     let prevTotal = 0;
+    let prevFirstFortnightTotal = 0;
+    let prevSecondFortnightTotal = 0;
+
     prevMonthRecords?.forEach((record: any) => {
       if (!record.employees?.job_positions) return;
 
@@ -189,17 +235,72 @@ export default function Dashboard() {
       );
 
       prevTotal += totalValue;
+
+      // Separar por quinzena do mês anterior
+      if (day <= 15) {
+        prevFirstFortnightTotal += totalValue;
+      } else {
+        prevSecondFortnightTotal += totalValue;
+      }
     });
 
-    // Buscar registros recentes
-    const { data: recent, error: recentError } = await supabase
+    setPrevFirstFortnight(prevFirstFortnightTotal);
+    setPrevSecondFortnight(prevSecondFortnightTotal);
+
+    // Buscar registros recentes COM dados dos cargos para calcular valores dinamicamente
+    const { data: recentRecordsData, error: recentError } = await supabase
       .from('time_records')
-      .select('id, date, entry_time, exit_time, total_value, employees(name)')
+      .select(`
+        id, 
+        date, 
+        entry_time, 
+        exit_time, 
+        total_value,
+        worked_hours,
+        employees (
+          name,
+          job_positions (
+            daily_rate,
+            overtime_rate
+          )
+        )
+      `)
       .order('date', { ascending: false })
       .order('entry_time', { ascending: false })
       .limit(5);
 
     if (recentError) throw recentError;
+
+    // Processar registros recentes para calcular valores dinamicamente
+    const processedRecent = recentRecordsData?.map((record: any) => {
+      let calculatedValue = record.total_value || 0;
+
+      // Se não tiver total_value mas tiver dados para calcular
+      if (!record.total_value && record.worked_hours && record.employees?.job_positions) {
+        const [year, month, day] = record.date.split('-').map(Number);
+        const recordDate = new Date(year, month - 1, day);
+
+        const { totalValue } = calculateDailyAndOvertimeValues(
+          record.worked_hours,
+          recordDate,
+          record.employees.job_positions.daily_rate,
+          record.employees.job_positions.overtime_rate
+        );
+
+        calculatedValue = totalValue;
+      }
+
+      return {
+        id: record.id,
+        date: record.date,
+        entry_time: record.entry_time,
+        exit_time: record.exit_time,
+        total_value: calculatedValue,
+        employees: {
+          name: record.employees.name
+        }
+      };
+    }) || [];
 
     // Buscar registros sem saída (pendentes)
     const { count: pendingCount, error: pendingError } = await supabase
@@ -220,7 +321,7 @@ export default function Dashboard() {
     setMonthlyDailyTotal(dailyTotal);
     setMonthlyOvertimeTotal(overtimeTotal);
     setPrevMonthTotal(prevTotal);
-    setRecentRecords(recent || []);
+    setRecentRecords(processedRecent);
   };
 
   const fetchSectorCosts = async () => {
@@ -251,7 +352,7 @@ export default function Dashboard() {
       const costs = data.reduce((acc: any, record: any) => {
         const sector = record.setor || 'OUTROS';
         if (!acc[sector]) {
-          acc[sector] = { setor: sector, total: 0, count: 0 };
+          acc[sector] = { setor: sector, total: 0, count: 0, firstFortnight: 0, secondFortnight: 0 };
         }
 
         // Calcular valor dinamicamente
@@ -267,6 +368,13 @@ export default function Dashboard() {
           );
 
           acc[sector].total += totalValue;
+
+          // Separar por quinzena
+          if (day <= 15) {
+            acc[sector].firstFortnight += totalValue;
+          } else {
+            acc[sector].secondFortnight += totalValue;
+          }
         }
         
         acc[sector].count += 1;
@@ -303,7 +411,7 @@ export default function Dashboard() {
     if (error) throw error;
 
     if (records) {
-      const costs: { [key: string]: { unit: string; total: number; count: number } } = {};
+      const costs: { [key: string]: { unit: string; total: number; count: number; firstFortnight: number; secondFortnight: number } } = {};
 
       records.forEach((record: any) => {
         const employee = record.employees;
@@ -321,10 +429,18 @@ export default function Dashboard() {
 
           employee.work_unit.forEach((unit: string) => {
             if (!costs[unit]) {
-              costs[unit] = { unit, total: 0, count: 0 };
+              costs[unit] = { unit, total: 0, count: 0, firstFortnight: 0, secondFortnight: 0 };
             }
-            costs[unit].total += totalValue / employee.work_unit.length;
+            const distributedValue = totalValue / employee.work_unit.length;
+            costs[unit].total += distributedValue;
             costs[unit].count += 1 / employee.work_unit.length;
+
+            // Separar por quinzena
+            if (day <= 15) {
+              costs[unit].firstFortnight += distributedValue;
+            } else {
+              costs[unit].secondFortnight += distributedValue;
+            }
           });
         }
       });
@@ -451,33 +567,46 @@ export default function Dashboard() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Resumo Mensal
+            <CardTitle className="text-lg">
+              Total do Mês — {format(new Date(), 'MMMM/yyyy', { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())}
             </CardTitle>
-            <CardDescription>{currentMonth}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-between items-center p-4 bg-muted/30 rounded-lg border border-border/40">
-              <span className="text-sm font-medium">Valor Diárias</span>
-              <span className="text-lg font-bold text-success/80">
-                {formatCurrency(monthlyDailyTotal)}
-              </span>
+            <div className="text-3xl font-bold">
+              {formatCurrency(stats.monthTotal)}
             </div>
-            <div className="flex justify-between items-center p-4 bg-muted/30 rounded-lg border border-border/40">
-              <span className="text-sm font-medium">Valor Extras</span>
-              <span className="text-lg font-bold text-info/80">
-                {formatCurrency(monthlyOvertimeTotal)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center p-4 bg-primary/5 rounded-lg border border-primary/20">
-              <div>
-                <p className="text-sm font-medium">{currentMonth}</p>
-                <p className="text-lg font-bold">{formatCurrency(stats.monthTotal)}</p>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm">1ª Quinzena: {formatCurrency(firstFortnight.total)}</span>
+                {prevSecondFortnight > 0 && (
+                  <Badge variant={firstFortnight.total >= prevSecondFortnight ? "default" : "destructive"} className="text-xs">
+                    {firstFortnight.total >= prevSecondFortnight ? "▲" : "▼"}
+                    {Math.abs(((firstFortnight.total - prevSecondFortnight) / prevSecondFortnight) * 100).toFixed(0)}% vs. última quinzena
+                  </Badge>
+                )}
               </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">{previousMonth}</p>
-                <p className="text-sm font-semibold">{formatCurrency(prevMonthTotal)}</p>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm">2ª Quinzena: {formatCurrency(secondFortnight.total)}</span>
+                {firstFortnight.total > 0 && (
+                  <Badge variant={secondFortnight.total >= firstFortnight.total ? "default" : "destructive"} className="text-xs">
+                    {secondFortnight.total >= firstFortnight.total ? "▲" : "▼"}
+                    {Math.abs(((secondFortnight.total - firstFortnight.total) / firstFortnight.total) * 100).toFixed(0)}% vs. última quinzena
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t">
+              <div className="flex items-center justify-between text-sm">
+                <span>Dif. vs {previousMonth}:</span>
+                {prevMonthTotal > 0 && (
+                  <Badge variant={percentageChange >= 0 ? "default" : "destructive"}>
+                    {percentageChange >= 0 ? "▲" : "▼"}
+                    {Math.abs(percentageChange).toFixed(0)}%
+                  </Badge>
+                )}
               </div>
             </div>
           </CardContent>
@@ -501,17 +630,18 @@ export default function Dashboard() {
                 workUnitCosts.map((unitCost) => (
                   <div
                     key={unitCost.unit}
-                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/40"
+                    className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/40"
                   >
-                    <div>
-                      <p className="font-medium text-sm">{unitCost.unit}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {Math.round(unitCost.count)} registro(s)
-                      </p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">{unitCost.unit}</p>
+                      <span className="font-bold">
+                        {formatCurrency(unitCost.total)}
+                      </span>
                     </div>
-                    <span className="font-semibold text-sm">
-                      {formatCurrency(unitCost.total)}
-                    </span>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <div>1ª Quinzena: {formatCurrency(unitCost.firstFortnight)}</div>
+                      <div>2ª Quinzena: {formatCurrency(unitCost.secondFortnight)}</div>
+                    </div>
                   </div>
                 ))
               )}
@@ -537,17 +667,18 @@ export default function Dashboard() {
                 sectorCosts.map((sector) => (
                   <div
                     key={sector.setor}
-                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/40"
+                    className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/40"
                   >
-                    <div>
-                      <p className="font-medium text-sm">{sector.setor}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {sector.count} registro(s)
-                      </p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">{sector.setor}</p>
+                      <span className="font-bold">
+                        {formatCurrency(sector.total)}
+                      </span>
                     </div>
-                    <span className="font-semibold text-sm">
-                      {formatCurrency(sector.total)}
-                    </span>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <div>1ª Quinzena: {formatCurrency(sector.firstFortnight)}</div>
+                      <div>2ª Quinzena: {formatCurrency(sector.secondFortnight)}</div>
+                    </div>
                   </div>
                 ))
               )}
