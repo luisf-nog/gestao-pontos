@@ -1,67 +1,61 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ShieldAlert } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 interface AdminRouteProps {
   children: ReactNode;
 }
 
 export function AdminRoute({ children }: AdminRouteProps) {
-  const { hasRole, isLoading, roles } = useAuth();
+  const { roles, isLoading: authLoading } = useAuth();
   const location = useLocation();
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
 
   useEffect(() => {
-    async function checkRouteAccess() {
-      if (isLoading || roles.length === 0) {
-        setIsCheckingAccess(true);
-        return;
-      }
-
+    const checkAccess = async () => {
+      if (authLoading) return;
+      
+      setIsCheckingAccess(true);
+      
       try {
-        const currentPath = location.pathname;
-        
         // Buscar permissões para a rota atual
         const { data: permissions, error } = await supabase
           .from('route_permissions')
           .select('role')
-          .eq('route', currentPath);
+          .eq('route', location.pathname);
 
-        if (error) {
-          console.error('Erro ao verificar permissões:', error);
-          setHasAccess(false);
-          setIsCheckingAccess(false);
-          return;
-        }
+        if (error) throw error;
 
-        // Se não há permissões definidas para esta rota, negar acesso
+        // Se não houver permissões configuradas para esta rota, negar acesso
         if (!permissions || permissions.length === 0) {
           setHasAccess(false);
           setIsCheckingAccess(false);
           return;
         }
 
-        // Verificar se o usuário tem algum dos roles necessários
-        const allowedRoles = permissions.map(p => p.role as string);
-        const userHasAccess = roles.some(userRole => allowedRoles.includes(userRole as string));
+        // Verificar se o usuário tem pelo menos um dos roles necessários
+        const allowedRoles = permissions.map(p => p.role);
+        const userHasAccess = roles.some(userRole => 
+          allowedRoles.includes(userRole as any)
+        );
         
         setHasAccess(userHasAccess);
-        setIsCheckingAccess(false);
       } catch (error) {
-        console.error('Erro ao verificar acesso:', error);
+        console.error('Erro ao verificar permissões:', error);
         setHasAccess(false);
+      } finally {
         setIsCheckingAccess(false);
       }
-    }
+    };
 
-    checkRouteAccess();
-  }, [location.pathname, isLoading, roles]);
+    checkAccess();
+  }, [location.pathname, roles, authLoading]);
 
-  if (isLoading || isCheckingAccess) {
+  if (authLoading || isCheckingAccess) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <p className="text-muted-foreground">Carregando...</p>
