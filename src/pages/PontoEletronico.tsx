@@ -185,18 +185,21 @@ export default function PontoEletronico() {
   };
 
   const handleLunchExit = async () => {
-    if (!todayRecord || !lunchExitTime) {
+    if (!todayRecord) {
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: 'Informe o horário de saída para almoço.',
+        description: 'Você precisa registrar a entrada primeiro.',
       });
       return;
     }
 
+    const now = new Date();
+    const time = format(now, 'HH:mm');
+
     const { error } = await supabase
       .from('time_records')
-      .update({ lunch_exit_time: lunchExitTime })
+      .update({ lunch_exit_time: time })
       .eq('id', todayRecord.id);
 
     if (error) {
@@ -208,33 +211,44 @@ export default function PontoEletronico() {
       return;
     }
 
-    setTodayRecord({ ...todayRecord, lunch_exit_time: lunchExitTime });
+    setTodayRecord({ ...todayRecord, lunch_exit_time: time });
     toast({
       title: 'Saída para almoço registrada',
-      description: `Registrado às ${lunchExitTime}`,
+      description: `Registrado às ${time}`,
     });
-    setLunchExitTime('');
   };
 
   const handleLunchReturn = async () => {
-    if (!todayRecord || !lunchReturnTime) {
+    if (!todayRecord) {
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: 'Informe o horário de retorno do almoço.',
+        description: 'Você precisa registrar a entrada primeiro.',
       });
       return;
     }
 
+    if (!todayRecord.lunch_exit_time) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Você precisa registrar a saída para almoço primeiro.',
+      });
+      return;
+    }
+
+    const now = new Date();
+    const time = format(now, 'HH:mm');
+
     // Calcular tempo de almoço
-    const [exitHour, exitMin] = (todayRecord.lunch_exit_time || '12:00').split(':').map(Number);
-    const [returnHour, returnMin] = lunchReturnTime.split(':').map(Number);
+    const [exitHour, exitMin] = todayRecord.lunch_exit_time.split(':').map(Number);
+    const [returnHour, returnMin] = time.split(':').map(Number);
     const lunchHours = (returnHour + returnMin / 60) - (exitHour + exitMin / 60);
 
     const { error } = await supabase
       .from('time_records')
       .update({ 
-        lunch_return_time: lunchReturnTime,
+        lunch_return_time: time,
         lunch_hours: lunchHours
       })
       .eq('id', todayRecord.id);
@@ -248,7 +262,7 @@ export default function PontoEletronico() {
       return;
     }
 
-    setTodayRecord({ ...todayRecord, lunch_return_time: lunchReturnTime, lunch_hours: lunchHours });
+    setTodayRecord({ ...todayRecord, lunch_return_time: time, lunch_hours: lunchHours });
     
     if (lunchHours > 1) {
       const extraMinutes = Math.round((lunchHours - 1) * 60);
@@ -260,17 +274,21 @@ export default function PontoEletronico() {
     } else {
       toast({
         title: 'Retorno do almoço registrado',
-        description: `Registrado às ${lunchReturnTime}`,
+        description: `Registrado às ${time}`,
       });
     }
-    
-    setLunchReturnTime('');
   };
 
   const handleExit = async () => {
-    if (!employee || !todayRecord) return;
+    if (!employee || !todayRecord) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Você precisa registrar a entrada primeiro.',
+      });
+      return;
+    }
     
-    // Verificar se há registro de almoço
     if (!todayRecord.lunch_exit_time) {
       toast({
         variant: 'destructive',
@@ -485,17 +503,16 @@ export default function PontoEletronico() {
                     <CardContent className="space-y-4">
                       {!todayRecord.lunch_exit_time ? (
                         <div className="space-y-2">
-                          <Label>Horário de Saída para Almoço</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              type="time"
-                              value={lunchExitTime}
-                              onChange={(e) => setLunchExitTime(e.target.value)}
-                            />
-                            <Button onClick={handleLunchExit}>
-                              Registrar Saída
-                            </Button>
-                          </div>
+                          <Alert>
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                              Clique no botão abaixo quando for sair para o almoço.
+                            </AlertDescription>
+                          </Alert>
+                          <Button onClick={handleLunchExit} className="w-full">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Registrar Saída para Almoço
+                          </Button>
                         </div>
                       ) : !todayRecord.lunch_return_time ? (
                         <div className="space-y-2">
@@ -504,17 +521,16 @@ export default function PontoEletronico() {
                               Saída para almoço: <strong>{todayRecord.lunch_exit_time}</strong>
                             </AlertDescription>
                           </Alert>
-                          <Label>Horário de Retorno do Almoço</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              type="time"
-                              value={lunchReturnTime}
-                              onChange={(e) => setLunchReturnTime(e.target.value)}
-                            />
-                            <Button onClick={handleLunchReturn}>
-                              Registrar Retorno
-                            </Button>
-                          </div>
+                          <Alert>
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                              Clique no botão abaixo quando retornar do almoço.
+                            </AlertDescription>
+                          </Alert>
+                          <Button onClick={handleLunchReturn} className="w-full">
+                            <LogIn className="mr-2 h-4 w-4" />
+                            Registrar Retorno do Almoço
+                          </Button>
                         </div>
                       ) : (
                         <div className="space-y-2">

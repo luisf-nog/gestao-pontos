@@ -1,180 +1,174 @@
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Shield, UserCog, RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Plus, Trash2, RefreshCcw } from 'lucide-react';
 
-type UserRole = 'admin' | 'moderator' | 'user' | 'dev' | 'inputer';
-
-interface UserWithRoles {
-  user_id: string;
-  email: string;
-  roles: UserRole[];
-}
-
-interface UserRoleEntry {
+interface RoutePermission {
   id: string;
-  user_id: string;
-  role: UserRole;
+  route: string;
+  label: string;
+  role: string;
 }
 
-const availableRoles: { value: UserRole; label: string; description: string }[] = [
-  { value: 'dev', label: 'Desenvolvedor', description: 'Acesso total ao sistema, incluindo importação e gerenciamento de roles' },
-  { value: 'admin', label: 'Administrador', description: 'Acesso completo a todas as funcionalidades administrativas' },
-  { value: 'moderator', label: 'Moderador', description: 'Acesso limitado a algumas funcionalidades administrativas' },
-  { value: 'inputer', label: 'Inputador', description: 'Acesso apenas ao controle de ponto simples' },
-  { value: 'user', label: 'Usuário', description: 'Acesso básico ao sistema' },
-];
-
-const routePermissions = [
-  { route: '/dashboard', label: 'Dashboard', roles: ['admin', 'dev'] },
-  { route: '/ponto', label: 'Controle de Ponto (Completo)', roles: ['admin', 'dev'] },
-  { route: '/controle-ponto-simples', label: 'Controle de Ponto (Simples)', roles: ['inputer', 'dev'] },
-  { route: '/relatorios', label: 'Relatórios', roles: ['admin', 'dev'] },
-  { route: '/funcionarios', label: 'Funcionários', roles: ['admin', 'dev'] },
-  { route: '/empresas', label: 'Empresas', roles: ['dev'] },
-  { route: '/importar', label: 'Importar Dados', roles: ['dev'] },
-  { route: '/gerenciamento-roles', label: 'Gerenciamento de Roles', roles: ['dev'] },
-  { route: '/settings', label: 'Configurações', roles: ['admin', 'dev', 'inputer', 'user', 'moderator'] },
-];
+interface RouteGroup {
+  route: string;
+  label: string;
+  roles: string[];
+}
 
 export default function GerenciamentoRoles() {
-  const [users, setUsers] = useState<UserWithRoles[]>([]);
-  const [selectedUser, setSelectedUser] = useState<string>('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('user');
+  const [routePermissions, setRoutePermissions] = useState<RouteGroup[]>([]);
+  const [selectedRoute, setSelectedRoute] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  const availableRoles = [
+    { value: 'admin', label: 'Admin', description: 'Acesso completo ao sistema de gestão' },
+    { value: 'moderator', label: 'Moderador', description: 'Pode gerenciar usuários' },
+    { value: 'user', label: 'Usuário', description: 'Acesso ao ponto eletrônico' },
+    { value: 'dev', label: 'Desenvolvedor', description: 'Acesso total incluindo gerenciamento de roles e empresas' },
+    { value: 'inputer', label: 'Digitador', description: 'Pode inserir registros de ponto no sistema simples' }
+  ];
+
+  const allRoutes = [
+    { route: '/dashboard', label: 'Dashboard' },
+    { route: '/ponto-eletronico', label: 'Ponto Eletrônico' },
+    { route: '/controle-ponto-simples', label: 'Controle de Ponto (Simples)' },
+    { route: '/relatorios', label: 'Relatórios' },
+    { route: '/funcionarios', label: 'Funcionários' },
+    { route: '/empresas', label: 'Empresas' },
+    { route: '/importar', label: 'Importar Dados' },
+    { route: '/gerenciamento-roles', label: 'Gerenciamento de Roles' },
+    { route: '/settings', label: 'Configurações' },
+    { route: '/qrcode', label: 'QR Code' },
+    { route: '/users', label: 'Usuários' },
+    { route: '/work-locations', label: 'Locais de Trabalho' },
+  ];
+
   useEffect(() => {
-    fetchUsersWithRoles();
+    fetchRoutePermissions();
   }, []);
 
-  const fetchUsersWithRoles = async () => {
-    setLoading(true);
+  const fetchRoutePermissions = async () => {
+    setIsLoading(true);
+    
     try {
-      // Buscar todos os perfis de usuários
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name');
+      const { data, error } = await supabase
+        .from('route_permissions' as any)
+        .select('*')
+        .order('route', { ascending: true });
 
-      if (profilesError) throw profilesError;
+      if (error) throw error;
 
-      // Buscar roles de todos os usuários
-      const { data: userRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('id, user_id, role');
-
-      if (rolesError) throw rolesError;
-
-      // Buscar emails dos usuários (usando tabela profiles que já tem relação com auth)
-      const authUsers: any[] = [];
-
-      // Buscar emails do auth.users usando a API Supabase
-      const { data: authData } = await supabase.auth.getUser();
-      
-      // Combinar dados
-      const usersWithRoles: UserWithRoles[] = [];
-      
-      for (const profile of profiles || []) {
-        // Buscar email do usuário através de query RPC ou deixar como ID
-        const roles = userRoles?.filter(ur => ur.user_id === profile.id).map(ur => ur.role as UserRole) || [];
-        
-        usersWithRoles.push({
-          user_id: profile.id,
-          email: profile.full_name || profile.id,
-          roles,
-        });
-      }
-
-      setUsers(usersWithRoles);
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro ao carregar usuários',
-        description: error.message,
+      // Agrupar por rota
+      const grouped = allRoutes.map(routeInfo => {
+        const permissions = (data || []).filter((p: any) => p.route === routeInfo.route);
+        return {
+          route: routeInfo.route,
+          label: routeInfo.label,
+          roles: permissions.map((p: any) => p.role)
+        };
       });
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleAddRole = async () => {
-    if (!selectedUser || !selectedRole) {
+      setRoutePermissions(grouped);
+    } catch (error) {
+      console.error('Erro ao carregar permissões:', error);
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: 'Selecione um usuário e um role',
+        description: 'Não foi possível carregar as permissões.',
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    const user = users.find(u => u.user_id === selectedUser);
-    if (user?.roles.includes(selectedRole)) {
+  const handleAddRoleToRoute = async () => {
+    if (!selectedRoute || !selectedRole) {
       toast({
         variant: 'destructive',
-        title: 'Role já existe',
-        description: 'Este usuário já possui este role',
+        title: 'Erro',
+        description: 'Selecione uma rota e um role.',
       });
       return;
     }
 
+    // Verificar se já existe
+    const routeData = routePermissions.find(r => r.route === selectedRoute);
+    if (routeData?.roles.includes(selectedRole)) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Este role já tem acesso a esta rota.',
+      });
+      return;
+    }
+
+    const routeLabel = allRoutes.find(r => r.route === selectedRoute)?.label || selectedRoute;
+
     const { error } = await supabase
-      .from('user_roles')
-      .insert([{ user_id: selectedUser, role: selectedRole as any }]);
+      .from('route_permissions' as any)
+      .insert([{ 
+        route: selectedRoute, 
+        label: routeLabel,
+        role: selectedRole as any
+      }]);
 
     if (error) {
       toast({
         variant: 'destructive',
-        title: 'Erro ao adicionar role',
+        title: 'Erro',
         description: error.message,
       });
       return;
     }
 
     toast({
-      title: 'Role adicionado',
-      description: 'O role foi adicionado com sucesso',
+      title: 'Sucesso',
+      description: 'Permissão adicionada com sucesso!',
     });
 
     setIsDialogOpen(false);
-    setSelectedUser('');
-    setSelectedRole('user');
-    fetchUsersWithRoles();
+    setSelectedRoute('');
+    setSelectedRole('');
+    fetchRoutePermissions();
   };
 
-  const handleRemoveRole = async (userId: string, role: UserRole) => {
-    if (!confirm(`Tem certeza que deseja remover o role "${role}" deste usuário?`)) {
+  const handleRemoveRoleFromRoute = async (route: string, role: string) => {
+    if (!confirm(`Tem certeza que deseja remover o acesso do role "${role}" da rota "${route}"?`)) {
       return;
     }
 
     const { error } = await supabase
-      .from('user_roles')
+      .from('route_permissions' as any)
       .delete()
-      .eq('user_id', userId)
+      .eq('route', route)
       .eq('role', role as any);
 
     if (error) {
       toast({
         variant: 'destructive',
-        title: 'Erro ao remover role',
+        title: 'Erro',
         description: error.message,
       });
       return;
     }
 
     toast({
-      title: 'Role removido',
-      description: 'O role foi removido com sucesso',
+      title: 'Sucesso',
+      description: 'Permissão removida com sucesso!',
     });
 
-    fetchUsersWithRoles();
+    fetchRoutePermissions();
   };
 
   const getRoleBadgeVariant = (role: string): "default" | "secondary" | "destructive" | "outline" => {
@@ -192,207 +186,161 @@ export default function GerenciamentoRoles() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando usuários...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Gerenciamento de Roles</h1>
-          <p className="text-muted-foreground">
-            Configure permissões e roles dos usuários do sistema
-          </p>
+    <div className="container mx-auto py-8 space-y-8">
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchUsersWithRoles}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Atualizar
-          </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Adicionar Role
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Adicionar Role ao Usuário</DialogTitle>
-                <DialogDescription>
-                  Selecione o usuário e o role que deseja adicionar
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="user-select">Usuário</Label>
-                  <Select value={selectedUser} onValueChange={setSelectedUser}>
-                    <SelectTrigger id="user-select">
-                      <SelectValue placeholder="Selecione um usuário" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {users.map((user) => (
-                        <SelectItem key={user.user_id} value={user.user_id}>
-                          {user.email}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+      ) : (
+        <>
+          {/* Seção de Permissões de Rotas */}
+          <section>
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">Gerenciamento de Permissões</h2>
+                <p className="text-muted-foreground">
+                  Gerencie quais roles têm acesso a cada página do sistema
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={fetchRoutePermissions}>
+                  <RefreshCcw className="h-4 w-4 mr-2" />
+                  Atualizar
+                </Button>
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar Permissão
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Adicionar Permissão de Acesso</DialogTitle>
+                      <DialogDescription>
+                        Conceda acesso de um role a uma rota específica.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label>Rota</Label>
+                        <Select value={selectedRoute} onValueChange={setSelectedRoute}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione uma rota" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allRoutes.map((route) => (
+                              <SelectItem key={route.route} value={route.route}>
+                                {route.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Role</Label>
+                        <Select value={selectedRole} onValueChange={setSelectedRole}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableRoles.map((role) => (
+                              <SelectItem key={role.value} value={role.value}>
+                                {role.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button onClick={handleAddRoleToRoute}>Adicionar Permissão</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="role-select">Role</Label>
-                  <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as UserRole)}>
-                    <SelectTrigger id="role-select">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableRoles.map((role) => (
-                        <SelectItem key={role.value} value={role.value}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{role.label}</span>
-                            <span className="text-xs text-muted-foreground">{role.description}</span>
+            <Card>
+              <CardHeader>
+                <CardTitle>Permissões por Rota</CardTitle>
+                <CardDescription>
+                  Clique no ícone de lixeira ao lado de cada role para remover o acesso
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Página</TableHead>
+                      <TableHead>Roles com Acesso</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {routePermissions.map((permission) => (
+                      <TableRow key={permission.route}>
+                        <TableCell className="font-medium">{permission.label}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2 flex-wrap">
+                            {permission.roles.length > 0 ? (
+                              permission.roles.map((role) => (
+                                <Badge key={role} variant={getRoleBadgeVariant(role)}>
+                                  {role}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground text-sm">Nenhum role tem acesso</span>
+                            )}
                           </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleAddRole}>
-                  Adicionar
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-end gap-2 flex-wrap">
+                            {permission.roles.map((role) => (
+                              <Button
+                                key={role}
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveRoleFromRoute(permission.route, role)}
+                                title={`Remover acesso do role ${role}`}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserCog className="h-5 w-5" />
-            Usuários e Roles
-          </CardTitle>
-          <CardDescription>
-            {users.length} usuário(s) cadastrado(s) no sistema
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Roles</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.user_id}>
-                  <TableCell className="font-medium">{user.email}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      {user.roles.length === 0 ? (
-                        <span className="text-muted-foreground text-sm">Nenhum role atribuído</span>
-                      ) : (
-                        user.roles.map((role) => (
-                          <Badge key={role} variant={getRoleBadgeVariant(role)}>
-                            {availableRoles.find(r => r.value === role)?.label || role}
-                          </Badge>
-                        ))
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      {user.roles.map((role) => (
-                        <Button
-                          key={role}
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveRole(user.user_id, role)}
-                          title={`Remover role ${role}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      ))}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Permissões por Rota
-          </CardTitle>
-          <CardDescription>
-            Visualize quais roles têm acesso a cada página do sistema
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Página</TableHead>
-                <TableHead>Roles com Acesso</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {routePermissions.map((route) => (
-                <TableRow key={route.route}>
-                  <TableCell className="font-medium">{route.label}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      {route.roles.map((role) => (
-                        <Badge key={role} variant={getRoleBadgeVariant(role as UserRole)}>
-                          {availableRoles.find(r => r.value === role)?.label || role}
-                        </Badge>
-                      ))}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Descrição dos Roles</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {availableRoles.map((role) => (
-              <div key={role.value} className="flex items-start gap-3 p-3 border rounded-lg">
-                <Badge variant={getRoleBadgeVariant(role.value)} className="mt-1">
-                  {role.label}
-                </Badge>
-                <p className="text-sm text-muted-foreground">{role.description}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+          {/* Descrição dos Roles */}
+          <section>
+            <Card>
+              <CardHeader>
+                <CardTitle>Descrição dos Roles</CardTitle>
+                <CardDescription>
+                  Entenda o que cada role representa no sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {availableRoles.map((role) => (
+                  <div key={role.value} className="flex items-start gap-3">
+                    <Badge variant={getRoleBadgeVariant(role.value)} className="mt-0.5">
+                      {role.label}
+                    </Badge>
+                    <p className="text-sm text-muted-foreground">{role.description}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </section>
+        </>
+      )}
     </div>
   );
 }
