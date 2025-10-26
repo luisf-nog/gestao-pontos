@@ -574,7 +574,6 @@ export default function Ponto() {
                       type="time"
                       value={formData.lunch_exit_time}
                       onChange={(e) => setFormData({ ...formData, lunch_exit_time: e.target.value })}
-                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -584,7 +583,6 @@ export default function Ponto() {
                       type="time"
                       value={formData.lunch_return_time}
                       onChange={(e) => setFormData({ ...formData, lunch_return_time: e.target.value })}
-                      required
                     />
                   </div>
                 </div>

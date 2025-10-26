@@ -200,16 +200,6 @@ export default function ControlePontoSimples() {
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validar que se a saída for preenchida, os horários de almoço também devem estar
-    if (formData.exit_time && (!formData.lunch_exit_time || !formData.lunch_return_time)) {
-      toast({
-        variant: 'destructive',
-        title: 'Campos obrigatórios',
-        description: 'Para registrar a saída, é necessário preencher a saída e retorno do almoço.',
-      });
-      return;
-    }
-
     const employee = employees.find(emp => emp.id === formData.employee_id);
     if (!employee) {
       toast({
