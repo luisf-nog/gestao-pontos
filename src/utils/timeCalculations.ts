@@ -39,8 +39,8 @@ export function calculateWorkedHours(
   const entry = timeStringToHours(entryTime);
   const exit = timeStringToHours(exitTime);
   
-  // Se tem horários de almoço registrados, usa o tempo real
-  let lunchBreak = 1; // Padrão: 1 hora
+  // Só desconta almoço se ambos os horários foram informados
+  let lunchBreak = 0;
   if (lunchExitTime && lunchReturnTime) {
     const lunchExit = timeStringToHours(lunchExitTime);
     const lunchReturn = timeStringToHours(lunchReturnTime);
