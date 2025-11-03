@@ -590,7 +590,6 @@ export default function Ponto() {
                       type="time"
                       value={formData.exit_time}
                       onChange={(e) => setFormData({ ...formData, exit_time: e.target.value })}
-                      required
                     />
                   </div>
                 </div>
