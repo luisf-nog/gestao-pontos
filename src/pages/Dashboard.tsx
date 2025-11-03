@@ -564,7 +564,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">
@@ -576,31 +576,43 @@ export default function Dashboard() {
               {formatCurrency(stats.monthTotal)}
             </div>
             
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">1ª Quinzena: {formatCurrency(firstFortnight.total)}</span>
-                {prevSecondFortnight > 0 && (
-                  <Badge variant={firstFortnight.total >= prevSecondFortnight ? "default" : "destructive"} className="text-xs">
-                    {firstFortnight.total >= prevSecondFortnight ? "▲" : "▼"}
-                    {Math.abs(((firstFortnight.total - prevSecondFortnight) / prevSecondFortnight) * 100).toFixed(0)}% vs. última quinzena
-                  </Badge>
+            <div className="space-y-3">
+              <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/40">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">1ª Quinzena</span>
+                  <span className="font-bold">{formatCurrency(firstFortnight.total)}</span>
+                </div>
+                {prevFirstFortnight > 0 && (
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>vs. Mês Anterior (1ª Quinzena)</span>
+                    <Badge variant={firstFortnight.total >= prevFirstFortnight ? "default" : "destructive"} className="text-xs">
+                      {firstFortnight.total >= prevFirstFortnight ? "▲" : "▼"}
+                      {Math.abs(((firstFortnight.total - prevFirstFortnight) / prevFirstFortnight) * 100).toFixed(0)}%
+                    </Badge>
+                  </div>
                 )}
               </div>
               
-              <div className="flex items-center justify-between">
-                <span className="text-sm">2ª Quinzena: {formatCurrency(secondFortnight.total)}</span>
-                {firstFortnight.total > 0 && (
-                  <Badge variant={secondFortnight.total >= firstFortnight.total ? "default" : "destructive"} className="text-xs">
-                    {secondFortnight.total >= firstFortnight.total ? "▲" : "▼"}
-                    {Math.abs(((secondFortnight.total - firstFortnight.total) / firstFortnight.total) * 100).toFixed(0)}% vs. última quinzena
-                  </Badge>
+              <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/40">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">2ª Quinzena</span>
+                  <span className="font-bold">{formatCurrency(secondFortnight.total)}</span>
+                </div>
+                {prevSecondFortnight > 0 && (
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>vs. Mês Anterior (2ª Quinzena)</span>
+                    <Badge variant={secondFortnight.total >= prevSecondFortnight ? "default" : "destructive"} className="text-xs">
+                      {secondFortnight.total >= prevSecondFortnight ? "▲" : "▼"}
+                      {Math.abs(((secondFortnight.total - prevSecondFortnight) / prevSecondFortnight) * 100).toFixed(0)}%
+                    </Badge>
+                  </div>
                 )}
               </div>
             </div>
 
             <div className="pt-2 border-t">
-              <div className="flex items-center justify-between text-sm">
-                <span>Dif. vs {previousMonth}:</span>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Total vs {previousMonth}</span>
                 {prevMonthTotal > 0 && (
                   <Badge variant={percentageChange >= 0 ? "default" : "destructive"}>
                     {percentageChange >= 0 ? "▲" : "▼"}
@@ -611,6 +623,63 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">
+              Comparação Detalhada — {format(new Date(), 'MMMM', { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())} vs {format(new Date(new Date().setMonth(new Date().getMonth() - 1)), 'MMMM', { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())}
+            </CardTitle>
+            <CardDescription>Análise por quinzena</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                <div className="text-xs font-medium text-muted-foreground">Período</div>
+                <div className="text-xs font-medium text-muted-foreground text-right">Mês Atual</div>
+                <div className="text-xs font-medium text-muted-foreground text-right">Mês Passado</div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 p-3 bg-muted/30 rounded-lg border border-border/40">
+                <div className="text-sm font-medium">1ª Quinzena</div>
+                <div className="text-sm font-bold text-right">{formatCurrency(firstFortnight.total)}</div>
+                <div className="text-sm text-muted-foreground text-right">{formatCurrency(prevFirstFortnight)}</div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 p-3 bg-muted/30 rounded-lg border border-border/40">
+                <div className="text-sm font-medium">2ª Quinzena</div>
+                <div className="text-sm font-bold text-right">{formatCurrency(secondFortnight.total)}</div>
+                <div className="text-sm text-muted-foreground text-right">{formatCurrency(prevSecondFortnight)}</div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 p-3 bg-primary/10 rounded-lg border border-primary/30">
+                <div className="text-sm font-bold">Total</div>
+                <div className="text-sm font-bold text-right">{formatCurrency(stats.monthTotal)}</div>
+                <div className="text-sm font-semibold text-muted-foreground text-right">{formatCurrency(prevMonthTotal)}</div>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Diferença Total:</span>
+                <span className={`font-bold ${stats.monthTotal >= prevMonthTotal ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {stats.monthTotal >= prevMonthTotal ? '+' : ''}{formatCurrency(stats.monthTotal - prevMonthTotal)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Variação Percentual:</span>
+                {prevMonthTotal > 0 && (
+                  <Badge variant={percentageChange >= 0 ? "default" : "destructive"} className="text-xs">
+                    {percentageChange >= 0 ? "▲" : "▼"}
+                    {Math.abs(percentageChange).toFixed(2)}%
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
 
         <Card>
           <CardHeader>
