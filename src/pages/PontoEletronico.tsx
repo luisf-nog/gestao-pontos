@@ -155,6 +155,32 @@ export default function PontoEletronico() {
     const today = format(now, 'yyyy-MM-dd');
     const time = format(now, 'HH:mm');
 
+    // Verificar se já existe entrada para este funcionário hoje
+    const { data: existingEntry, error: existingError } = await supabase
+      .from('time_records')
+      .select('id')
+      .eq('employee_id', employee.id)
+      .eq('date', today)
+      .maybeSingle();
+
+    if (existingError) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao verificar registros',
+        description: existingError.message,
+      });
+      return;
+    }
+
+    if (existingEntry) {
+      toast({
+        variant: 'destructive',
+        title: 'Entrada já registrada',
+        description: 'Você já registrou entrada hoje. Não é possível registrar novamente.',
+      });
+      return;
+    }
+
     const { data, error } = await supabase
       .from('time_records')
       .insert([{

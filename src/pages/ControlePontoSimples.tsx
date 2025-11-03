@@ -225,6 +225,34 @@ export default function ControlePontoSimples() {
       return;
     }
 
+    // Verificar se já existe entrada para este funcionário nesta data (apenas ao criar novo registro)
+    if (!editingRecord) {
+      const { data: existingEntry, error: existingError } = await supabase
+        .from('time_records')
+        .select('id')
+        .eq('employee_id', formData.employee_id)
+        .eq('date', formData.date)
+        .maybeSingle();
+
+      if (existingError) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao verificar registros',
+          description: existingError.message,
+        });
+        return;
+      }
+
+      if (existingEntry) {
+        toast({
+          variant: 'destructive',
+          title: 'Registro duplicado',
+          description: 'Já existe um registro de ponto para este funcionário nesta data.',
+        });
+        return;
+      }
+    }
+
     const workedHours = formData.exit_time 
       ? calculateWorkedHours(
           formData.entry_time, 
