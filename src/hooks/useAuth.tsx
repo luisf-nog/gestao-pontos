@@ -118,32 +118,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/dashboard`;
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
+    try {
+      const redirectUrl = `${window.location.origin}/dashboard`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName,
+          },
         },
-      },
-    });
+      });
 
-    if (error) {
+      if (error) throw error;
+
+      // Criar profile e role após signup bem-sucedido
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            full_name: fullName
+          });
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+        }
+
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: data.user.id,
+            role: 'user'
+          });
+
+        if (roleError) {
+          console.error('Error creating role:', roleError);
+        }
+      }
+
+      // Verifica se o usuário precisa confirmar o email
+      const needsEmailConfirmation = data.user && !data.session;
+
+      return { error: null, needsEmailConfirmation };
+    } catch (error: any) {
       toast({
         title: 'Erro ao criar conta',
         description: error.message,
         variant: 'destructive',
       });
-      return { error };
+      return { error, needsEmailConfirmation: false };
     }
-
-    // Verifica se o usuário precisa confirmar o email
-    const needsEmailConfirmation = data.user && !data.session;
-
-    return { error, needsEmailConfirmation };
   };
 
   const signOut = async () => {
