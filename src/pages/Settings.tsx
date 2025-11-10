@@ -3,20 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, X } from 'lucide-react';
 
 export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [employeeId, setEmployeeId] = useState<string | null>(null);
   
   const [profileData, setProfileData] = useState({
     full_name: '',
@@ -55,73 +49,6 @@ export default function Settings() {
         phone: data.phone || '',
       });
     }
-
-    // Buscar foto do funcionário vinculado
-    const { data: employeeData } = await supabase
-      .from('employees')
-      .select('id, photo_url')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (employeeData) {
-      setEmployeeId(employeeData.id);
-      setPhotoPreview(employeeData.photo_url);
-    }
-  };
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          variant: 'destructive',
-          title: 'Arquivo muito grande',
-          description: 'A foto deve ter no máximo 5MB.',
-        });
-        return;
-      }
-
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const uploadPhoto = async (): Promise<string | null> => {
-    if (!photoFile || !employeeId) return null;
-
-    setIsUploading(true);
-    const fileExt = photoFile.name.split('.').pop();
-    const fileName = `${employeeId}.${fileExt}`;
-    const filePath = `${fileName}`;
-
-    try {
-      // Upload da nova foto
-      const { error: uploadError } = await supabase.storage
-        .from('employee-photos')
-        .upload(filePath, photoFile, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      // Obter URL pública
-      const { data } = supabase.storage
-        .from('employee-photos')
-        .getPublicUrl(filePath);
-
-      return data.publicUrl;
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro ao fazer upload da foto',
-        description: error.message,
-      });
-      return null;
-    } finally {
-      setIsUploading(false);
-    }
   };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -129,21 +56,6 @@ export default function Settings() {
     if (!user) return;
 
     setIsLoading(true);
-
-    // Upload da foto se houver
-    let photoUrl = photoPreview;
-    if (photoFile && employeeId) {
-      const uploadedUrl = await uploadPhoto();
-      if (uploadedUrl) {
-        photoUrl = uploadedUrl;
-        
-        // Atualizar foto no registro do funcionário
-        await supabase
-          .from('employees')
-          .update({ photo_url: uploadedUrl })
-          .eq('id', employeeId);
-      }
-    }
 
     const { error } = await supabase
       .from('profiles')
@@ -168,8 +80,6 @@ export default function Settings() {
       title: 'Perfil atualizado!',
       description: 'Suas informações foram atualizadas com sucesso.',
     });
-
-    setPhotoFile(null);
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -277,58 +187,6 @@ export default function Settings() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleUpdateProfile} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Foto</Label>
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-20 w-20">
-                    {photoPreview ? (
-                      <AvatarImage src={photoPreview} alt="Foto de perfil" />
-                    ) : (
-                      <AvatarFallback className="text-2xl">
-                        {profileData.full_name ? profileData.full_name.substring(0, 2).toUpperCase() : user?.email?.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => document.getElementById('photo-upload')?.click()}
-                      disabled={isUploading || !employeeId}
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      {photoPreview ? 'Alterar' : 'Adicionar'} Foto
-                    </Button>
-                    {photoPreview && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setPhotoFile(null);
-                          setPhotoPreview(null);
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                  <input
-                    id="photo-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handlePhotoChange}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {!employeeId 
-                    ? 'Disponível apenas para funcionários cadastrados' 
-                    : 'Formatos aceitos: JPG, PNG. Tamanho máximo: 5MB'}
-                </p>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input 

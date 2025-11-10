@@ -13,8 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Pencil, Trash2, AlertCircle, CheckCircle2, Upload, X, Search } from 'lucide-react';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Plus, Pencil, Trash2, AlertCircle, CheckCircle2, Search } from 'lucide-react';
 import { generateEmployeeEmail } from '@/utils/emailGenerator';
 
 interface Company {
@@ -37,7 +36,6 @@ interface Employee {
   company_id: string;
   position_id: string | null;
   user_id: string | null;
-  photo_url: string | null;
   birth_date: string | null;
   phone: string | null;
   notes: string | null;
@@ -60,9 +58,6 @@ export default function Funcionarios() {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [nameCheckStatus, setNameCheckStatus] = useState<'idle' | 'checking' | 'duplicate' | 'available'>('idle');
   const [duplicateEmployees, setDuplicateEmployees] = useState<Employee[]>([]);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   const { hasRole } = useAuth();
@@ -163,66 +158,6 @@ export default function Funcionarios() {
     setEmployees(data || []);
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          variant: 'destructive',
-          title: 'Arquivo muito grande',
-          description: 'A foto deve ter no máximo 5MB.',
-        });
-        return;
-      }
-
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const uploadPhoto = async (employeeId: string): Promise<string | null> => {
-    if (!photoFile) return null;
-
-    setIsUploading(true);
-    const fileExt = photoFile.name.split('.').pop();
-    const fileName = `${employeeId}.${fileExt}`;
-    const filePath = `${fileName}`;
-
-    try {
-      // Deletar foto antiga se existir
-      const { error: deleteError } = await supabase.storage
-        .from('employee-photos')
-        .remove([filePath]);
-
-      // Upload da nova foto
-      const { error: uploadError } = await supabase.storage
-        .from('employee-photos')
-        .upload(filePath, photoFile, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      // Obter URL pública
-      const { data } = supabase.storage
-        .from('employee-photos')
-        .getPublicUrl(filePath);
-
-      return data.publicUrl;
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro ao fazer upload da foto',
-        description: error.message,
-      });
-      return null;
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
   const checkNameDuplicate = useCallback(async (name: string) => {
     if (!name || name.trim().length < 2) {
       setNameCheckStatus('idle');
@@ -271,20 +206,12 @@ export default function Funcionarios() {
     e.preventDefault();
 
     if (editingEmployee) {
-      // Upload da foto se houver
-      let photoUrl = editingEmployee.photo_url;
-      if (photoFile) {
-        const uploadedUrl = await uploadPhoto(editingEmployee.id);
-        if (uploadedUrl) photoUrl = uploadedUrl;
-      }
-
       const updateData = {
         name: formData.name,
         email: formData.email,
         cpf: formData.cpf || null,
         company_id: formData.company_id,
         position_id: formData.position_id || null,
-        photo_url: photoUrl,
         birth_date: formData.birth_date || null,
         phone: formData.phone || null,
         notes: formData.notes || null,
@@ -337,17 +264,6 @@ export default function Funcionarios() {
           description: error.message,
         });
         return;
-      }
-
-      // Upload da foto se houver
-      if (photoFile && newEmployee) {
-        const uploadedUrl = await uploadPhoto(newEmployee.id);
-        if (uploadedUrl) {
-          await supabase
-            .from('employees')
-            .update({ photo_url: uploadedUrl })
-            .eq('id', newEmployee.id);
-        }
       }
 
       // Criar usuário automaticamente se email foi gerado
@@ -408,8 +324,6 @@ export default function Funcionarios() {
       notes: employee.notes || '',
       work_unit: employee.work_unit || ['Matriz'],
     });
-    setPhotoPreview(employee.photo_url);
-    setPhotoFile(null);
 
     setIsDialogOpen(true);
   };
@@ -453,8 +367,6 @@ export default function Funcionarios() {
     });
     setNameCheckStatus('idle');
     setDuplicateEmployees([]);
-    setPhotoFile(null);
-    setPhotoPreview(null);
   };
 
   const handleDialogClose = () => {
@@ -517,56 +429,6 @@ export default function Funcionarios() {
               <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
                 <div className="overflow-y-auto flex-1 px-1">
                   <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label>Foto</Label>
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-20 w-20">
-                        {photoPreview ? (
-                          <AvatarImage src={photoPreview} alt="Preview" />
-                        ) : (
-                          <AvatarFallback className="text-2xl">
-                            {formData.name ? formData.name.substring(0, 2).toUpperCase() : '?'}
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => document.getElementById('photo-upload')?.click()}
-                          disabled={isUploading}
-                        >
-                          <Upload className="mr-2 h-4 w-4" />
-                          {photoPreview ? 'Alterar' : 'Adicionar'} Foto
-                        </Button>
-                        {photoPreview && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setPhotoFile(null);
-                              setPhotoPreview(null);
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                      <input
-                        id="photo-upload"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handlePhotoChange}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Formatos aceitos: JPG, PNG. Tamanho máximo: 5MB
-                    </p>
-                  </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="name">Nome (somente maiúsculas)</Label>
                     <Input
@@ -825,7 +687,6 @@ export default function Funcionarios() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12"></TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>CPF</TableHead>
                 <TableHead>Idade</TableHead>
@@ -839,24 +700,13 @@ export default function Funcionarios() {
             <TableBody>
               {filteredEmployees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 9 : 8} className="text-center text-muted-foreground">
+                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground">
                     {searchTerm ? 'Nenhum funcionário encontrado com esse nome' : 'Nenhum funcionário cadastrado'}
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredEmployees.map((employee) => (
                   <TableRow key={employee.id}>
-                    <TableCell>
-                      <Avatar className="h-8 w-8">
-                        {employee.photo_url ? (
-                          <AvatarImage src={employee.photo_url} alt={employee.name} />
-                        ) : (
-                          <AvatarFallback>
-                            {employee.name.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                    </TableCell>
                     <TableCell className="font-medium">
                       <div>{employee.name}</div>
                       {employee.notes && (

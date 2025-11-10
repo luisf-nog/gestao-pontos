@@ -140,7 +140,6 @@ export type Database = {
           notes: string | null
           personal_email: string | null
           phone: string | null
-          photo_url: string | null
           position_id: string | null
           updated_at: string
           user_id: string | null
@@ -159,7 +158,6 @@ export type Database = {
           notes?: string | null
           personal_email?: string | null
           phone?: string | null
-          photo_url?: string | null
           position_id?: string | null
           updated_at?: string
           user_id?: string | null
@@ -178,7 +176,6 @@ export type Database = {
           notes?: string | null
           personal_email?: string | null
           phone?: string | null
-          photo_url?: string | null
           position_id?: string | null
           updated_at?: string
           user_id?: string | null
